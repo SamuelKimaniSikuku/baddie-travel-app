@@ -1,5 +1,6 @@
+const isDemo = true;
 import { useState, useEffect, useRef, useCallback } from "react";
-import ALL_QUESTIONS from './data/questions';
+
 
 const STRIPE_LINK = "https://buy.stripe.com/9B63cxewr3QW3w2bXG0sU00";
 const TRIAL_PER_THEME = 10; // Free questions per category
@@ -315,7 +316,7 @@ async function validateCode(raw) {
   } catch { return false; }
 }
 
-// Questions imported from ./data/questions.js
+// Questions 
 
 
 
