@@ -1,5 +1,6 @@
-const isDemo = true;
 import { useState, useEffect, useRef, useCallback } from "react";
+
+const isDemo = true;
 
 
 const STRIPE_LINK = "https://buy.stripe.com/9B63cxewr3QW3w2bXG0sU00";
