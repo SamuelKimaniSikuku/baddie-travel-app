@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-var isDemo = true;
+var isDemo = false;
 
 var TRAVELERS = [
   { id:"d1", name:"Sofia", age:26, avatar:"\ud83e\uddd5", verified:true, city:"Barcelona", destination:"Bali", destEmoji:"\ud83c\udf34", dates:"Mar 15 - Apr 2", bio:"Yoga retreats, sunrise hikes, and street food adventures. Looking for a chill travel buddy!", vibe:"Adventurous", budget:"Mid-range", interests:["Yoga","Hiking","Food","Photography"], languages:["English","Spanish"], tripCount:7, rating:4.8, color:"#FF6B35", online:true, lastSeen:"now", stories:[{text:"Just booked my Bali flight!",bg:"#FF6B35"},{text:"Anyone tried Ubud rice terraces?",bg:"#1B998B"}] },
