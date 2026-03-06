@@ -95,6 +95,7 @@ function AuthScreen({ onLogin }) {
   var [name, setName] = useState("");
   var [loading, setLoading] = useState(false);
   var [error, setError] = useState("");
+  var [emailSent, setEmailSent] = useState(false); // ← NEW
 
   useEffect(function() { var t = setTimeout(function(){ setMode("login"); }, 2200); return function(){ clearTimeout(t); }; }, []);
 
@@ -110,6 +111,12 @@ function AuthScreen({ onLogin }) {
       if (isSignup) {
         var result = await authService.signUp({ email, password: pw, name: name || "Traveler", avatar: "😎" });
         if (result.error) { setError(result.error.message); setLoading(false); return; }
+        // If no session, email confirmation is required
+        if (result.user && !result.session) {
+          setEmailSent(true); // ← SHOW CONFIRMATION SCREEN
+          setLoading(false);
+          return;
+        }
         if (result.user) onLogin(result.user);
       } else {
         var result = await authService.signIn({ email, password: pw });
@@ -132,6 +139,40 @@ function AuthScreen({ onLogin }) {
           backgroundSize:"200% 200%", animation:"gradShift 3s ease infinite",
           WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", letterSpacing:-2 }}>baddie</h1>
         <p style={{ color:T.mist, fontSize:13, letterSpacing:4, textTransform:"uppercase", fontWeight:300, marginTop:8 }}>find your travel tribe</p>
+      </div>
+    </div>;
+  }
+
+  // ── Email confirmation screen ────────────────────────────
+  if (emailSent) {
+    return <div style={{ height:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:32, textAlign:"center", background:"radial-gradient(ellipse at 20% 0%, "+T.flame+"12 0%, transparent 50%), "+T.midnight,
+      animation:"fadeIn 0.5s ease" }}>
+      <div style={{ animation:"popIn 0.6s cubic-bezier(0.34,1.56,0.64,1)", maxWidth:340 }}>
+        <div style={{ fontSize:72, marginBottom:20, animation:"float 3s ease-in-out infinite" }}>✉️</div>
+        <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:28, fontWeight:900, marginBottom:10,
+          background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+          Check your email!
+        </h2>
+        <p style={{ color:T.mist, fontSize:14, lineHeight:1.6, marginBottom:8 }}>
+          We sent a confirmation link to
+        </p>
+        <p style={{ color:T.coral, fontWeight:700, fontSize:15, marginBottom:20,
+          background:T.flame+"15", padding:"8px 16px", borderRadius:12, display:"inline-block" }}>
+          {email}
+        </p>
+        <p style={{ color:T.ash, fontSize:12, lineHeight:1.6, marginBottom:28 }}>
+          Click the link in your email to activate your account, then come back and sign in.
+        </p>
+        <button onClick={function(){ setEmailSent(false); setMode("login"); setError(""); }} style={{
+          width:"100%", padding:"14px", borderRadius:14, border:"none",
+          background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white,
+          fontSize:14, fontWeight:600, cursor:"pointer", boxShadow:"0 4px 24px "+T.flame+"44", marginBottom:12
+        }}>Go to Sign In ✈️</button>
+        <p style={{ color:T.ash, fontSize:11 }}>
+          Didn't get it?{" "}
+          <span onClick={submit} style={{ color:T.coral, cursor:"pointer", fontWeight:600 }}>Resend email</span>
+        </p>
       </div>
     </div>;
   }
