@@ -33,3 +33,5 @@ supabase/.branches/
 # OS
 .DS_Store
 *.pem
+.vercel
+.env*.local
