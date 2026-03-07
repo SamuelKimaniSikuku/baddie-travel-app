@@ -1109,13 +1109,10 @@ export default function App() {
   var matchesHook = useMatches(isDemo ? null : userId);
 
   var baseProfile = isDemo
-    ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
-    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "explorer@baddie.app" });
-    ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
-    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "explorer@baddie.app" });
+    ? { name:"You", avatar:"\ud83d\ude0e", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
+    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"\ud83d\ude0e", email: auth.user?.email || "explorer@baddie.app" });
 
   var userProfile = localProfile || baseProfile;
-
   var matches = isDemo ? demoMatches : (matchesHook.matches || []);
   var isAuthed = isDemo ? manualAuth : !!auth.user;
   var isLoading = isDemo ? false : auth.loading;
@@ -1138,7 +1135,7 @@ export default function App() {
     <style>{css}</style>
     <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:T.midnight }}>
       <div style={{ textAlign:"center", animation:"fadeIn 0.5s" }}>
-        <div style={{ fontSize:48, animation:"float 2s ease-in-out infinite" }}>✈️</div>
+        <div style={{ fontSize:48, animation:"float 2s ease-in-out infinite" }}>\u2708\ufe0f</div>
         <p style={{ color:T.mist, marginTop:12 }}>Loading...</p>
       </div>
     </div>
@@ -1146,13 +1143,12 @@ export default function App() {
 
   if (!isAuthed) return <><style>{css}</style><AuthScreen onLogin={handleLogin} /></>;
 
-  var userAvatar = userProfile?.avatar || "😎";
-
+  var userAvatar = userProfile?.avatar || "\ud83d\ude0e";
   var tabs = [
-    { id:"discover", icon:"🔥", label:"Discover" },
-    { id:"chats", icon:"💬", label:"Chats" },
-    { id:"trips", icon:"✈️", label:"Trips" },
-    { id:"profile", icon:"👤", label:"Profile" },
+    { id:"discover", icon:"\ud83d\udd25", label:"Discover" },
+    { id:"chats", icon:"\ud83d\udcac", label:"Chats" },
+    { id:"trips", icon:"\u2708\ufe0f", label:"Trips" },
+    { id:"profile", icon:"\ud83d\udc64", label:"Profile" },
   ];
 
   return <>
@@ -1164,7 +1160,7 @@ export default function App() {
           background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>baddie</h1>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {matches.length>0 && <div style={{ background:T.flame+"22", borderRadius:12, padding:"3px 9px", display:"flex", alignItems:"center", gap:4 }}>
-            <span style={{ fontSize:11 }}>🔥</span><span style={{ fontSize:11, color:T.coral, fontWeight:600 }}>{matches.length}</span>
+            <span style={{ fontSize:11 }}>\ud83d\udd25</span><span style={{ fontSize:11, color:T.coral, fontWeight:600 }}>{matches.length}</span>
           </div>}
           <div style={{ width:32, height:32, borderRadius:"50%", background:T.charcoal, border:"2px solid "+T.slate,
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer" }}
@@ -1198,8 +1194,4 @@ export default function App() {
       />}
     </div>
   </>;
-<<<<<<< HEAD
 }
-=======
-}// refresh
->>>>>>> e4ce48a (Force redeploy)
