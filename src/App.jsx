@@ -804,6 +804,209 @@ function ChatDetail({ match, userId, onBack }) {
   </div>;
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// FLIGHT POOL SCREEN
+// ══════════════════════════════════════════════════════════════
+var DEMO_FLIGHT_POOL = [
+  { id:"fp1", name:"Sofia", age:26, avatar:"🧕", city:"Barcelona", destination:"Bali", flightNumber:"SQ 422", flightDate:"2026-03-15", departureTime:"08:45", bio:"Yoga & sunsets 🌅", interests:["Yoga","Photography"], seat:"Economy", verified:true },
+  { id:"fp2", name:"Marcus", age:29, avatar:"👨🏾", city:"London", destination:"Bali", flightNumber:"SQ 422", flightDate:"2026-03-15", departureTime:"08:45", bio:"Anime nerd & foodie 🍜", interests:["Anime","Food"], seat:"Business", verified:true },
+  { id:"fp3", name:"Priya", age:27, avatar:"👩🏽", city:"Mumbai", destination:"Bali", flightNumber:"SQ 422", flightDate:"2026-03-15", departureTime:"08:45", bio:"Island hopping & cocktails 🌊", interests:["Sailing","History"], seat:"Economy", verified:false },
+  { id:"fp4", name:"Liam", age:28, avatar:"🧑🏻", city:"Dublin", destination:"Bali", flightNumber:"SQ 422", flightDate:"2026-03-15", departureTime:"08:45", bio:"Backpacker ☕ Coffee addict", interests:["Coffee","Motorbikes"], seat:"Economy", verified:true },
+  { id:"fp5", name:"Ayla", age:24, avatar:"👩🏾", city:"Istanbul", destination:"Bali", flightNumber:"SQ 422", flightDate:"2026-03-15", departureTime:"08:45", bio:"Photographer chasing golden hour 📸", interests:["Photography","Art"], seat:"Economy", verified:false },
+];
+
+function FlightPoolScreen({ userProfile, onOpenChat }) {
+  var [step, setStep] = useState("enter"); // enter | results
+  var [flightNumber, setFlightNumber] = useState("");
+  var [destination, setDestination] = useState("");
+  var [flightDate, setFlightDate] = useState("");
+  var [departureTime, setDepartureTime] = useState("");
+  var [loading, setLoading] = useState(false);
+  var [poolPeople, setPoolPeople] = useState([]);
+  var [myFlight, setMyFlight] = useState(null);
+  var [sentRequests, setSentRequests] = useState([]);
+
+  var inputSt = { width:"100%", padding:"12px 14px", borderRadius:12, border:"1px solid "+T.glassBorder,
+    background:T.glass, color:T.white, fontSize:13, outline:"none", marginBottom:10, colorScheme:"dark" };
+  var labelSt = { fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, marginBottom:6, display:"block" };
+
+  function search() {
+    if (!flightNumber.trim() || !destination.trim() || !flightDate) return;
+    setLoading(true);
+    setTimeout(function() {
+      setMyFlight({ flightNumber: flightNumber.toUpperCase(), destination, flightDate, departureTime });
+      setPoolPeople(DEMO_FLIGHT_POOL);
+      setLoading(false);
+      setStep("results");
+    }, 1500);
+  }
+
+  function sendRequest(person) {
+    setSentRequests(function(p){ return p.concat([person.id]); });
+  }
+
+  if (step === "enter") {
+    return <div style={{ flex:1, overflow:"auto", padding:"0 16px 24px" }}>
+      {/* Hero */}
+      <div style={{ textAlign:"center", padding:"24px 0 20px", animation:"fadeInUp 0.4s ease" }}>
+        <div style={{ fontSize:52, marginBottom:8, animation:"float 3s ease-in-out infinite" }}>🛫</div>
+        <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:24, fontWeight:900,
+          background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+          Flight Pool
+        </h2>
+        <p style={{ color:T.ash, fontSize:12, marginTop:6, lineHeight:1.6 }}>
+          Enter your flight and connect with travelers<br/>on the same plane ✈️
+        </p>
+      </div>
+
+      {/* Form */}
+      <Glass style={{ padding:18, animation:"fadeInUp 0.4s ease 0.1s both" }}>
+        <span style={labelSt}>Flight number</span>
+        <input value={flightNumber} onChange={function(e){setFlightNumber(e.target.value)}}
+          placeholder="e.g. SQ 422, BA 117" style={inputSt} />
+
+        <span style={labelSt}>Destination</span>
+        <input value={destination} onChange={function(e){setDestination(e.target.value)}}
+          placeholder="e.g. Bali, Tokyo, New York" style={inputSt} />
+
+        <div style={{ display:"flex", gap:8 }}>
+          <div style={{ flex:1 }}>
+            <span style={labelSt}>Date</span>
+            <input type="date" value={flightDate} onChange={function(e){setFlightDate(e.target.value)}}
+              style={{...inputSt}} />
+          </div>
+          <div style={{ flex:1 }}>
+            <span style={labelSt}>Departure time</span>
+            <input type="time" value={departureTime} onChange={function(e){setDepartureTime(e.target.value)}}
+              style={{...inputSt}} />
+          </div>
+        </div>
+
+        <button onClick={search} disabled={loading || !flightNumber || !destination || !flightDate} style={{
+          width:"100%", padding:"13px", borderRadius:12, border:"none",
+          background: (!flightNumber||!destination||!flightDate) ? T.slate : "linear-gradient(135deg,"+T.flame+","+T.sunset+")",
+          color:T.white, fontSize:13, fontWeight:600, cursor:"pointer",
+          opacity: loading ? 0.7 : 1, marginTop:4 }}>
+          {loading ? "Searching... ✈️" : "Find Flight Mates 🔍"}
+        </button>
+      </Glass>
+
+      {/* How it works */}
+      <div style={{ marginTop:20, animation:"fadeInUp 0.4s ease 0.2s both" }}>
+        <p style={{ fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, marginBottom:12 }}>How it works</p>
+        {[
+          { icon:"✈️", title:"Enter your flight", desc:"Add your flight number, destination and date" },
+          { icon:"👥", title:"See who's flying", desc:"Browse travelers on the same flight as you" },
+          { icon:"💬", title:"Connect & meet", desc:"Send a hello and meet before or during the flight" },
+        ].map(function(step, i){
+          return <div key={i} style={{ display:"flex", gap:12, marginBottom:14, animation:"fadeInUp 0.3s ease "+(0.3+i*0.1)+"s both" }}>
+            <div style={{ width:38, height:38, borderRadius:10, background:T.flame+"18", flexShrink:0,
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>{step.icon}</div>
+            <div>
+              <p style={{ fontSize:13, fontWeight:600, marginBottom:2 }}>{step.title}</p>
+              <p style={{ fontSize:11, color:T.ash, lineHeight:1.5 }}>{step.desc}</p>
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>;
+  }
+
+  // Results screen
+  var seatColors = { Economy: T.sky, Business: T.gold, "First Class": T.violet };
+
+  return <div style={{ flex:1, overflow:"auto", padding:"0 0 16px" }}>
+    {/* Flight banner */}
+    <div style={{ margin:"0 16px 14px", padding:"14px 16px", borderRadius:16,
+      background:"linear-gradient(135deg,"+T.flame+"22,"+T.sunset+"18)", border:"1px solid "+T.flame+"33",
+      animation:"fadeInUp 0.3s ease" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:20 }}>✈️</span>
+          <div>
+            <p style={{ fontWeight:700, fontSize:15 }}>{myFlight.flightNumber}</p>
+            <p style={{ fontSize:11, color:T.ash }}>→ {myFlight.destination}</p>
+          </div>
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <p style={{ fontSize:12, color:T.coral, fontWeight:600 }}>{myFlight.departureTime || "—"}</p>
+          <p style={{ fontSize:10, color:T.ash }}>{myFlight.flightDate}</p>
+        </div>
+      </div>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <p style={{ fontSize:11, color:T.mint }}>{poolPeople.length} travelers on this flight</p>
+        <button onClick={function(){ setStep("enter"); setPoolPeople([]); }} style={{
+          background:"none", border:"1px solid "+T.glassBorder, borderRadius:8,
+          color:T.mist, fontSize:10, padding:"3px 10px", cursor:"pointer" }}>Change flight</button>
+      </div>
+    </div>
+
+    {/* Group chat CTA */}
+    <div onClick={function(){ onOpenChat({ id:"flight-group", name:"Flight "+myFlight.flightNumber+" Group", avatar:"✈️", destination:myFlight.destination, isGroup:true }); }}
+      style={{ margin:"0 16px 14px", padding:"12px 14px", borderRadius:14, cursor:"pointer",
+        background:"linear-gradient(135deg,"+T.electric+"18,"+T.violet+"12)", border:"1px solid "+T.electric+"33",
+        display:"flex", alignItems:"center", gap:10, animation:"fadeInUp 0.3s ease 0.1s both" }}>
+      <div style={{ width:38, height:38, borderRadius:10, background:T.electric+"22",
+        display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>💬</div>
+      <div style={{ flex:1 }}>
+        <p style={{ fontSize:13, fontWeight:600 }}>Flight Group Chat</p>
+        <p style={{ fontSize:11, color:T.ash }}>All {poolPeople.length} travelers · Tap to join</p>
+      </div>
+      <span style={{ color:T.violet, fontSize:18 }}>›</span>
+    </div>
+
+    {/* People list */}
+    <p style={{ fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, padding:"0 16px", marginBottom:10 }}>
+      Travelers on your flight
+    </p>
+    {poolPeople.map(function(person, i){
+      var sent = sentRequests.includes(person.id);
+      var seatColor = seatColors[person.seat] || T.sky;
+      return <div key={person.id} style={{ margin:"0 16px 10px", padding:"14px", borderRadius:16,
+        background:T.glass, border:"1px solid "+T.glassBorder,
+        animation:"fadeInUp 0.3s ease "+(i*0.06)+"s both" }}>
+        <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+          {/* Avatar */}
+          <div style={{ width:50, height:50, borderRadius:"50%", background:T.charcoal, border:"2px solid "+T.flame+"44",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
+            {person.avatar}
+          </div>
+          {/* Info */}
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+              <span style={{ fontWeight:600, fontSize:14 }}>{person.name}</span>
+              <span style={{ fontSize:11, color:T.ash }}>{person.age}</span>
+              {person.verified && <span style={{ fontSize:10, color:T.mint }}>✓</span>}
+              <span style={{ marginLeft:"auto", fontSize:9, fontWeight:600, padding:"2px 8px", borderRadius:6,
+                background:seatColor+"22", color:seatColor }}>{person.seat}</span>
+            </div>
+            <p style={{ fontSize:11, color:T.ash, marginBottom:6 }}>📍 {person.city}</p>
+            <p style={{ fontSize:12, color:T.mist, lineHeight:1.5, marginBottom:8 }}>{person.bio}</p>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:10 }}>
+              {person.interests.map(function(int){
+                return <span key={int} style={{ background:T.glass, border:"1px solid "+T.glassBorder,
+                  borderRadius:8, padding:"2px 8px", fontSize:10, color:T.cloud }}>{int}</span>;
+              })}
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={function(){ sendRequest(person); }} style={{
+                flex:1, padding:"8px", borderRadius:10, border:"none", cursor: sent ? "default" : "pointer", fontSize:11, fontWeight:600,
+                background: sent ? T.mint+"22" : "linear-gradient(135deg,"+T.flame+","+T.sunset+")",
+                color: sent ? T.mint : T.white, transition:"all 0.3s" }}>
+                {sent ? "✓ Request Sent" : "👋 Say Hello"}
+              </button>
+              <button onClick={function(){ onOpenChat(person); }} style={{
+                padding:"8px 14px", borderRadius:10, border:"1px solid "+T.glassBorder,
+                background:T.glass, color:T.white, fontSize:11, cursor:"pointer" }}>💬</button>
+            </div>
+          </div>
+        </div>
+      </div>;
+    })}
+  </div>;
+}
+
 // ══════════════════════════════════════════════════════════════
 // TRIPS SCREEN
 // ══════════════════════════════════════════════════════════════
@@ -907,133 +1110,6 @@ var VIBES = ["Adventurous","Cultural","Creative","Extreme","Social","Relaxed","S
 var BUDGETS = ["Budget","Mid-range","Flexible","Luxury"];
 var ALL_INTERESTS = ["Hiking","Food","Photography","Yoga","Music","Art","Nightlife","History","Beaches","Mountains","Camping","Surfing","Diving","Architecture","Markets","Coffee","Motorbikes","Wildlife","Sailing","Trekking"];
 
-function EditProfileScreen({ userProfile, onSave, onBack }) {
-  var [name, setName] = useState(userProfile?.name || "");
-  var [bio, setBio] = useState(userProfile?.bio || "");
-  var [city, setCity] = useState(userProfile?.city || "");
-  var [avatar, setAvatar] = useState(userProfile?.avatar || "😎");
-  var [vibe, setVibe] = useState(userProfile?.vibe || "Adventurous");
-  var [budget, setBudget] = useState(userProfile?.budget || "Mid-range");
-  var [interests, setInterests] = useState(userProfile?.interests || []);
-  var [destination, setDestination] = useState(userProfile?.destination || "");
-  var [dates, setDates] = useState(userProfile?.dates || "");
-  var [saved, setSaved] = useState(false);
-
-  function toggleInterest(interest) {
-    setInterests(function(prev) {
-      return prev.includes(interest) ? prev.filter(function(i){ return i !== interest; }) : prev.concat([interest]);
-    });
-  }
-
-  function save() {
-    var updated = { name, bio, city, avatar, vibe, budget, interests, destination, dates };
-    onSave(updated);
-    setSaved(true);
-    setTimeout(function(){ setSaved(false); onBack(updated); }, 1000);
-  }
-
-  var inputSt = { width:"100%", padding:"12px 14px", borderRadius:12, border:"1px solid "+T.glassBorder,
-    background:T.glass, color:T.white, fontSize:13, outline:"none", marginBottom:10 };
-  var labelSt = { fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, marginBottom:7, display:"block" };
-
-  return <div style={{ position:"fixed", inset:0, zIndex:60, background:T.midnight, display:"flex", flexDirection:"column", animation:"slideInR 0.25s ease" }}>
-    {/* Header */}
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 10px",
-      borderBottom:"1px solid "+T.glass }}>
-      <button onClick={function(){ onBack(null); }} style={{ background:"none", border:"none", color:T.mist, fontSize:20, cursor:"pointer" }}>←</button>
-      <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:18, fontWeight:700 }}>Edit Profile</h2>
-      <button onClick={save} style={{ padding:"7px 18px", borderRadius:20, border:"none",
-        background: saved ? T.mint : "linear-gradient(135deg,"+T.flame+","+T.sunset+")",
-        color:T.white, fontSize:12, fontWeight:600, cursor:"pointer", transition:"background 0.3s" }}>
-        {saved ? "Saved ✓" : "Save"}
-      </button>
-    </div>
-
-    <div style={{ flex:1, overflow:"auto", padding:"16px 16px 32px" }}>
-      {/* Avatar picker */}
-      <div style={{ textAlign:"center", marginBottom:24 }}>
-        <div style={{ width:80, height:80, borderRadius:"50%", border:"3px solid "+T.flame, background:T.charcoal,
-          display:"flex", alignItems:"center", justifyContent:"center", fontSize:38, margin:"0 auto 14px" }}>{avatar}</div>
-        <span style={labelSt}>Choose your avatar</span>
-        <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:8 }}>
-          {AVATARS.map(function(a){
-            return <button key={a} onClick={function(){ setAvatar(a); }} style={{
-              width:44, height:44, borderRadius:"50%", border: avatar===a ? "2px solid "+T.flame : "2px solid transparent",
-              background: avatar===a ? T.flame+"22" : T.glass, fontSize:22, cursor:"pointer",
-              transition:"all 0.15s" }}>{a}</button>;
-          })}
-        </div>
-      </div>
-
-      {/* Basic info */}
-      <span style={labelSt}>Your name</span>
-      <input value={name} onChange={function(e){setName(e.target.value)}} placeholder="Your name" style={inputSt} />
-
-      <span style={labelSt}>Your city</span>
-      <input value={city} onChange={function(e){setCity(e.target.value)}} placeholder="Where are you based?" style={inputSt} />
-
-      <span style={labelSt}>Bio</span>
-      <textarea value={bio} onChange={function(e){setBio(e.target.value)}} placeholder="Tell other travelers about yourself..."
-        rows={3} style={{...inputSt, resize:"none", lineHeight:1.5}} />
-
-      {/* Next destination */}
-      <span style={labelSt}>Next destination</span>
-      <input value={destination} onChange={function(e){setDestination(e.target.value)}} placeholder="e.g. Bali, Tokyo, Morocco" style={inputSt} />
-
-      <span style={labelSt}>Travel dates</span>
-      <input value={dates} onChange={function(e){setDates(e.target.value)}} placeholder="e.g. Mar 15 – Apr 2" style={inputSt} />
-
-      {/* Travel vibe */}
-      <span style={labelSt}>Travel vibe</span>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:16 }}>
-        {VIBES.map(function(v){
-          return <button key={v} onClick={function(){ setVibe(v); }} style={{
-            padding:"7px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:500,
-            background: vibe===v ? "linear-gradient(135deg,"+T.flame+","+T.sunset+")" : T.glass,
-            color: vibe===v ? T.white : T.mist,
-            border: vibe===v ? "none" : "1px solid "+T.glassBorder,
-            transition:"all 0.15s" }}>{v}</button>;
-        })}
-      </div>
-
-      {/* Budget */}
-      <span style={labelSt}>Budget</span>
-      <div style={{ display:"flex", gap:7, marginBottom:16 }}>
-        {BUDGETS.map(function(b){
-          return <button key={b} onClick={function(){ setBudget(b); }} style={{
-            flex:1, padding:"9px 4px", borderRadius:12, border:"none", cursor:"pointer", fontSize:11, fontWeight:500,
-            background: budget===b ? "linear-gradient(135deg,"+T.gold+"cc,"+T.sunset+"cc)" : T.glass,
-            color: budget===b ? T.midnight : T.mist,
-            border: budget===b ? "none" : "1px solid "+T.glassBorder,
-            transition:"all 0.15s" }}>{b}</button>;
-        })}
-      </div>
-
-      {/* Interests */}
-      <span style={labelSt}>Interests ({interests.length} selected)</span>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:16 }}>
-        {ALL_INTERESTS.map(function(interest){
-          var on = interests.includes(interest);
-          return <button key={interest} onClick={function(){ toggleInterest(interest); }} style={{
-            padding:"6px 13px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:500,
-            background: on ? T.electric+"33" : T.glass,
-            color: on ? T.violet : T.mist,
-            border: on ? "1px solid "+T.violet+"66" : "1px solid "+T.glassBorder,
-            transition:"all 0.15s" }}>{interest}</button>;
-        })}
-      </div>
-
-      {/* Save button */}
-      <button onClick={save} style={{ width:"100%", padding:"14px", borderRadius:14, border:"none",
-        background: saved ? "linear-gradient(135deg,"+T.mint+","+T.lime+")" : "linear-gradient(135deg,"+T.flame+","+T.sunset+")",
-        color: saved ? T.midnight : T.white, fontSize:14, fontWeight:600, cursor:"pointer",
-        boxShadow:"0 4px 24px "+T.flame+"44", transition:"all 0.3s", marginTop:8 }}>
-        {saved ? "✓ Profile Saved!" : "Save Profile ✈️"}
-      </button>
-    </div>
-  </div>;
-}
-
 
 // ══════════════════════════════════════════════════════════════
 // PROFILE SCREEN
@@ -1046,7 +1122,6 @@ function ProfileScreen({ matchCount, userProfile, onSignOut, onEditProfile }) {
   var displayCity = userProfile?.city || "";
   var displayDest = userProfile?.destination || "";
   var displayVibe = userProfile?.vibe || "";
-
   return <div style={{ flex:1, overflow:"auto", padding:"0 16px 16px" }}>
     <Glass style={{ padding:22, textAlign:"center", marginBottom:18, animation:"fadeInUp 0.4s ease" }}>
       <div style={{ width:72, height:72, borderRadius:"50%", margin:"0 auto 10px", background:T.charcoal, border:"3px solid "+T.flame,
@@ -1109,8 +1184,8 @@ export default function App() {
   var matchesHook = useMatches(isDemo ? null : userId);
 
   var baseProfile = isDemo
-    ? { name:"You", avatar:"\ud83d\ude0e", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
-    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"\ud83d\ude0e", email: auth.user?.email || "explorer@baddie.app" });
+    ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
+    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "explorer@baddie.app" });
 
   var userProfile = localProfile || baseProfile;
   var matches = isDemo ? demoMatches : (matchesHook.matches || []);
@@ -1135,7 +1210,7 @@ export default function App() {
     <style>{css}</style>
     <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:T.midnight }}>
       <div style={{ textAlign:"center", animation:"fadeIn 0.5s" }}>
-        <div style={{ fontSize:48, animation:"float 2s ease-in-out infinite" }}>\u2708\ufe0f</div>
+        <div style={{ fontSize:48, animation:"float 2s ease-in-out infinite" }}>✈️</div>
         <p style={{ color:T.mist, marginTop:12 }}>Loading...</p>
       </div>
     </div>
@@ -1143,12 +1218,13 @@ export default function App() {
 
   if (!isAuthed) return <><style>{css}</style><AuthScreen onLogin={handleLogin} /></>;
 
-  var userAvatar = userProfile?.avatar || "\ud83d\ude0e";
+  var userAvatar = userProfile?.avatar || "😎";
   var tabs = [
-    { id:"discover", icon:"\ud83d\udd25", label:"Discover" },
-    { id:"chats", icon:"\ud83d\udcac", label:"Chats" },
-    { id:"trips", icon:"\u2708\ufe0f", label:"Trips" },
-    { id:"profile", icon:"\ud83d\udc64", label:"Profile" },
+    { id:"discover", icon:"🔥", label:"Discover" },
+    { id:"flights", icon:"🛫", label:"Flights" },
+    { id:"chats", icon:"💬", label:"Chats" },
+    { id:"trips", icon:"🗺️", label:"Trips" },
+    { id:"profile", icon:"👤", label:"Profile" },
   ];
 
   return <>
@@ -1160,7 +1236,7 @@ export default function App() {
           background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>baddie</h1>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {matches.length>0 && <div style={{ background:T.flame+"22", borderRadius:12, padding:"3px 9px", display:"flex", alignItems:"center", gap:4 }}>
-            <span style={{ fontSize:11 }}>\ud83d\udd25</span><span style={{ fontSize:11, color:T.coral, fontWeight:600 }}>{matches.length}</span>
+            <span style={{ fontSize:11 }}>🔥</span><span style={{ fontSize:11, color:T.coral, fontWeight:600 }}>{matches.length}</span>
           </div>}
           <div style={{ width:32, height:32, borderRadius:"50%", background:T.charcoal, border:"2px solid "+T.slate,
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer" }}
@@ -1170,6 +1246,7 @@ export default function App() {
 
       {screen==="discover" && <DiscoverScreen onMatch={handleMatch} matches={matches} userId={userId} userProfile={userProfile} />}
       {screen==="chats" && <ChatsListScreen matches={matches} userId={userId} onOpenChat={setActiveChat} />}
+      {screen==="flights" && <FlightPoolScreen userProfile={userProfile} onOpenChat={function(person){ setActiveChat(person); setScreen("chats"); }} />}
       {screen==="trips" && <TripsScreen matches={matches} userId={userId} />}
       {screen==="profile" && <ProfileScreen matchCount={matches.length} userProfile={userProfile} onSignOut={handleSignOut} onEditProfile={function(){ setEditingProfile(true); }} />}
 
