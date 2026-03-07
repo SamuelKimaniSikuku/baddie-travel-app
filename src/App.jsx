@@ -1103,13 +1103,14 @@ export default function App() {
   var [manualAuth, setManualAuth] = useState(false);
   var [editingProfile, setEditingProfile] = useState(false);
   var [localProfile, setLocalProfile] = useState(null);
-  var [localProfile, setLocalProfile] = useState(null);
 
   var userId = auth.user?.id || null;
   var profileHook = useProfile(isDemo ? null : userId);
   var matchesHook = useMatches(isDemo ? null : userId);
 
   var baseProfile = isDemo
+    ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
+    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "explorer@baddie.app" });
     ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
     : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "explorer@baddie.app" });
 
