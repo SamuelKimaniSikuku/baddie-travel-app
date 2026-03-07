@@ -1103,7 +1103,6 @@ export default function App() {
   var [manualAuth, setManualAuth] = useState(false);
   var [editingProfile, setEditingProfile] = useState(false);
   var [localProfile, setLocalProfile] = useState(null);
-  var [editingProfile, setEditingProfile] = useState(false);
   var [localProfile, setLocalProfile] = useState(null);
 
   var userId = auth.user?.id || null;
