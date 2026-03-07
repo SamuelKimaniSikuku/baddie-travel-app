@@ -1034,35 +1034,18 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
   </div>;
 }
 
+
 // ══════════════════════════════════════════════════════════════
 // PROFILE SCREEN
 // ══════════════════════════════════════════════════════════════
-function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUpdate }) {
-  var [editMode, setEditMode] = useState(false);
-  var [localProfile, setLocalProfile] = useState(userProfile);
-
-  var displayName = localProfile?.name || "You";
-  var displayAvatar = localProfile?.avatar || "😎";
-  var displayEmail = localProfile?.email || userProfile?.email || "explorer@baddie.app";
-  var displayBio = localProfile?.bio || "";
-  var displayCity = localProfile?.city || "";
-  var displayDest = localProfile?.destination || "";
-  var displayVibe = localProfile?.vibe || "";
-
-  function handleSave(updated) {
-    if (updated) {
-      setLocalProfile(function(prev){ return {...prev, ...updated}; });
-      if (onProfileUpdate) onProfileUpdate(updated);
-    }
-  }
-
-  if (editMode) {
-    return <EditProfileScreen
-      userProfile={localProfile}
-      onSave={handleSave}
-      onBack={function(updated){ if(updated) handleSave(updated); setEditMode(false); }}
-    />;
-  }
+function ProfileScreen({ matchCount, userProfile, onSignOut, onEditProfile }) {
+  var displayName = userProfile?.name || "Traveler";
+  var displayAvatar = userProfile?.avatar || "😎";
+  var displayEmail = userProfile?.email || "explorer@baddie.app";
+  var displayBio = userProfile?.bio || "";
+  var displayCity = userProfile?.city || "";
+  var displayDest = userProfile?.destination || "";
+  var displayVibe = userProfile?.vibe || "";
 
   return <div style={{ flex:1, overflow:"auto", padding:"0 16px 16px" }}>
     <Glass style={{ padding:22, textAlign:"center", marginBottom:18, animation:"fadeInUp 0.4s ease" }}>
@@ -1072,17 +1055,15 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
       {displayCity && <p style={{ color:T.coral, fontSize:11, marginTop:2 }}>📍 {displayCity}</p>}
       <p style={{ color:T.ash, fontSize:12, marginTop:2 }}>{displayEmail}</p>
       {displayBio && <p style={{ color:T.mist, fontSize:11, marginTop:8, lineHeight:1.5, fontStyle:"italic" }}>"{displayBio}"</p>}
-      {displayDest && <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:10,
-        background:T.flame+"22", borderRadius:12, padding:"4px 12px" }}>
+      {displayDest && <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:10, background:T.flame+"22", borderRadius:12, padding:"4px 12px" }}>
         <span style={{ fontSize:11, color:T.coral }}>✈️ Heading to {displayDest}</span>
       </div>}
-      {displayVibe && <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:6, marginLeft:6,
-        background:T.electric+"18", borderRadius:12, padding:"4px 12px" }}>
+      {displayVibe && <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:6, marginLeft:6, background:T.electric+"18", borderRadius:12, padding:"4px 12px" }}>
         <span style={{ fontSize:11, color:T.violet }}>{displayVibe}</span>
       </div>}
       {isDemo && <p style={{ color:T.gold, fontSize:10, marginTop:6, background:T.gold+"15", padding:"3px 8px", borderRadius:6, display:"inline-block" }}>Demo Mode</p>}
       <div style={{ display:"flex", justifyContent:"center", gap:24, marginTop:16 }}>
-        {[{icon:"🔥",label:"Matches",value:matchCount},{icon:"✈️",label:"Trips",value:localProfile?.trip_count||1},{icon:"🌍",label:"Countries",value:4}].map(function(s){
+        {[{icon:"🔥",label:"Matches",value:matchCount},{icon:"✈️",label:"Trips",value:userProfile?.trip_count||1},{icon:"🌍",label:"Countries",value:4}].map(function(s){
           return <div key={s.label} style={{ textAlign:"center" }}>
             <div style={{ fontSize:18, marginBottom:3 }}>{s.icon}</div>
             <div style={{ fontSize:18, fontWeight:700 }}>{s.value}</div>
@@ -1091,26 +1072,21 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
         })}
       </div>
     </Glass>
-
-    {/* Menu items */}
     {[
-      { icon:"👤", label:"Edit Profile", action: function(){ setEditMode(true); } },
-      { icon:"🎯", label:"Travel Preferences", action: function(){ setEditMode(true); } },
+      { icon:"👤", label:"Edit Profile", action: onEditProfile },
+      { icon:"🎯", label:"Travel Preferences", action: onEditProfile },
       { icon:"🔔", label:"Notifications", action: null },
       { icon:"🔒", label:"Privacy", action: null },
       { icon:"🎨", label:"Appearance", action: null },
       { icon:"❓", label:"Help", action: null },
     ].map(function(item, i){
-      return <div key={i} onClick={item.action || undefined} style={{
-        display:"flex", alignItems:"center", gap:12, padding:"13px 14px", borderRadius:12, cursor: item.action ? "pointer" : "default",
-        background: item.action ? "transparent" : "transparent",
-        transition:"background 0.15s" }}>
+      return <div key={i} onClick={function(){ if(item.action) item.action(); }} style={{
+        display:"flex", alignItems:"center", gap:12, padding:"13px 14px", borderRadius:12, cursor: item.action ? "pointer" : "default" }}>
         <span style={{ fontSize:16 }}>{item.icon}</span>
         <span style={{ fontSize:13, fontWeight:500, color: item.action ? T.white : T.ash }}>{item.label}</span>
         <span style={{ marginLeft:"auto", color: item.action ? T.coral : T.slate }}>›</span>
       </div>;
     })}
-
     <button onClick={onSignOut} style={{ width:"100%", marginTop:16, padding:13, borderRadius:14, border:"1px solid "+T.rose+"33", background:T.rose+"11", color:T.rose, fontSize:13, fontWeight:500, cursor:"pointer" }}>Sign Out</button>
   </div>;
 }
@@ -1125,22 +1101,24 @@ export default function App() {
   var [showMatch, setShowMatch] = useState(null);
   var [activeChat, setActiveChat] = useState(null);
   var [manualAuth, setManualAuth] = useState(false);
+  var [editingProfile, setEditingProfile] = useState(false);
+  var [localProfile, setLocalProfile] = useState(null);
 
   var userId = auth.user?.id || null;
   var profileHook = useProfile(isDemo ? null : userId);
   var matchesHook = useMatches(isDemo ? null : userId);
 
-  var userProfile = isDemo
-    ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"] }
-    : profileHook.profile;
+  var baseProfile = isDemo
+    ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"], email:"explorer@baddie.app" }
+    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "explorer@baddie.app" });
+
+  var userProfile = localProfile || baseProfile;
 
   var matches = isDemo ? demoMatches : (matchesHook.matches || []);
   var isAuthed = isDemo ? manualAuth : !!auth.user;
   var isLoading = isDemo ? false : auth.loading;
 
-  function handleLogin(data) {
-    if (isDemo) setManualAuth(true);
-  }
+  function handleLogin(data) { if (isDemo) setManualAuth(true); }
 
   function handleMatch(traveler) {
     if (isDemo) {
@@ -1195,7 +1173,7 @@ export default function App() {
       {screen==="discover" && <DiscoverScreen onMatch={handleMatch} matches={matches} userId={userId} userProfile={userProfile} />}
       {screen==="chats" && <ChatsListScreen matches={matches} userId={userId} onOpenChat={setActiveChat} />}
       {screen==="trips" && <TripsScreen matches={matches} userId={userId} />}
-      {screen==="profile" && <ProfileScreen matchCount={matches.length} userId={userId} userProfile={userProfile} onSignOut={handleSignOut} onProfileUpdate={function(updated){ /* future: sync to Supabase */ }} />}
+      {screen==="profile" && <ProfileScreen matchCount={matches.length} userProfile={userProfile} onSignOut={handleSignOut} onEditProfile={function(){ setEditingProfile(true); }} />}
 
       <div style={{ display:"flex", borderTop:"1px solid "+T.glass, background:"linear-gradient(to top,"+T.ink+","+T.midnight+")", padding:"7px 8px 10px" }}>
         {tabs.map(function(tab){
@@ -1211,6 +1189,11 @@ export default function App() {
 
       {showMatch && <MatchOverlay match={showMatch} userAvatar={userAvatar} onMessage={function(){ setShowMatch(null); setActiveChat(showMatch); setScreen("chats"); }} onClose={function(){setShowMatch(null)}} />}
       {activeChat && <ChatDetail match={activeChat} userId={userId} onBack={function(){setActiveChat(null)}} />}
+      {editingProfile && <EditProfileScreen
+        userProfile={userProfile}
+        onSave={function(updated){ setLocalProfile(function(prev){ return {...(prev||baseProfile), ...updated}; }); }}
+        onBack={function(){ setEditingProfile(false); }}
+      />}
     </div>
   </>;
 }
