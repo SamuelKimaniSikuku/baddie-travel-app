@@ -22,7 +22,7 @@ class ProfilesService {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('*, destinations(*)')
+      .select('*')
       .eq('id', userId)
       .single();
     return { data, error };
@@ -118,7 +118,7 @@ class ProfilesService {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('*, destinations(*)')
+      .select('*')
       .eq('id', profileId)
       .single();
     return { data, error };
