@@ -1132,7 +1132,7 @@ export default function App() {
 
   var userProfile = isDemo
     ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"] }
-    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "" });
+    : profileHook.profile;
 
   var matches = isDemo ? demoMatches : (matchesHook.matches || []);
   var isAuthed = isDemo ? manualAuth : !!auth.user;
