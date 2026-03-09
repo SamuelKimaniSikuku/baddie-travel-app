@@ -78,6 +78,29 @@ input,textarea,button,select{font-family:'Sora',sans-serif;}
 `;
 
 // ─── Shared Components ───────────────────────────────────────
+
+var toastListeners = [];
+function showToast(msg) { toastListeners.forEach(function(fn){ fn(msg); }); }
+function ToastContainer() {
+  var [toasts, setToasts] = useState([]);
+  useEffect(function() {
+    var fn = function(msg) {
+      var id = Date.now();
+      setToasts(function(p){ return p.concat([{id, ...msg}]); });
+      setTimeout(function(){ setToasts(function(p){ return p.filter(function(t){ return t.id !== id; }); }); }, 3500);
+    };
+    toastListeners.push(fn);
+    return function(){ toastListeners = toastListeners.filter(function(l){ return l !== fn; }); };
+  }, []);
+  return <div style={{ position:"fixed", top:16, left:"50%", transform:"translateX(-50%)", zIndex:999, display:"flex", flexDirection:"column", gap:8, pointerEvents:"none", width:"calc(100% - 32px)", maxWidth:440 }}>
+    {toasts.map(function(t){
+      return <div key={t.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"11px 14px", borderRadius:14, background:t.color||"rgba(30,30,50,0.97)", border:"1px solid rgba(255,255,255,0.12)", backdropFilter:"blur(20px)", boxShadow:"0 8px 32px rgba(0,0,0,0.4)", animation:"fadeInUp 0.3s ease" }}>
+        <span style={{ fontSize:20 }}>{t.icon||"🔔"}</span>
+        <div><p style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{t.title}</p>{t.body && <p style={{ fontSize:11, color:"rgba(255,255,255,0.6)", marginTop:1 }}>{t.body}</p>}</div>
+      </div>;
+    })}
+  </div>;
+}
 function Glass({ children, style, onClick }) {
   return <div onClick={onClick} style={{
     background:T.glass, backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)",
@@ -1211,6 +1234,7 @@ export default function App() {
 
       {showMatch && <MatchOverlay match={showMatch} userAvatar={userAvatar} onMessage={function(){ setShowMatch(null); setActiveChat(showMatch); setScreen("chats"); }} onClose={function(){setShowMatch(null)}} />}
       {activeChat && <ChatDetail match={activeChat} userId={userId} onBack={function(){setActiveChat(null)}} />}
+    <ToastContainer />
     </div>
   </>;
 }
