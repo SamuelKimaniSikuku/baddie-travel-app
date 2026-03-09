@@ -830,6 +830,128 @@ function ChatDetail({ match, userId, onBack }) {
 // ══════════════════════════════════════════════════════════════
 // TRIPS SCREEN
 // ══════════════════════════════════════════════════════════════
+
+// FLIGHT GROUP CHAT
+function FlightGroupChat({ flight, people, userProfile, onBack }) {
+  var [messages, setMessages] = useState([
+    { id:1, from:"Sofia", avatar:"🧕", text:"Hey everyone on flight "+flight.flightNumber+"! So excited!", time:"Now" },
+    { id:2, from:"Marcus", avatar:"👨🏾", text:"Same!! Anyone grabbing coffee before boarding?", time:"Now" },
+    { id:3, from:"Priya", avatar:"👩🏽", text:"I am at gate B12 if anyone wants to meet!", time:"Now" },
+  ]);
+  var [input, setInput] = useState("");
+  var [typing, setTyping] = useState(false);
+  var scrollRef = useRef(null);
+  var myName = userProfile&&userProfile.name?userProfile.name:"You";
+  var myAvatar = userProfile&&userProfile.avatar?userProfile.avatar:"😎";
+  var RESPONSES = ["Great idea! See you there!","I am in! What gate?","This trip will be epic!","Does the flight have WiFi?","Just checked in, seat 24A!"];
+  useEffect(function(){ scrollRef.current&&scrollRef.current.scrollTo({top:scrollRef.current.scrollHeight,behavior:"smooth"}); },[messages]);
+  function send() {
+    if(!input.trim())return;
+    setMessages(function(p){return p.concat([{id:Date.now(),from:myName,avatar:myAvatar,text:input.trim(),time:"Now",isMe:true}]);});
+    setInput("");setTyping(true);
+    var r=people[Math.floor(Math.random()*people.length)];
+    setTimeout(function(){setTyping(false);setMessages(function(p){return p.concat([{id:Date.now()+1,from:r.name,avatar:r.avatar,text:RESPONSES[Math.floor(Math.random()*RESPONSES.length)],time:"Now"}]);});},1500);
+  }
+  return <div style={{position:"fixed",inset:0,zIndex:60,background:T.midnight,display:"flex",flexDirection:"column"}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px",borderBottom:"1px solid "+T.glass,background:"linear-gradient(to bottom,"+T.ink+","+T.midnight+")"}}>
+      <button onClick={onBack} style={{background:"none",border:"none",color:T.white,fontSize:20,cursor:"pointer"}}>←</button>
+      <div style={{width:38,height:38,borderRadius:10,background:T.flame+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>✈️</div>
+      <div style={{flex:1}}><h3 style={{fontSize:14,fontWeight:600}}>Flight {flight.flightNumber} Group</h3><span style={{fontSize:10,color:T.mint}}>{people.length} travelers · {flight.destination}</span></div>
+    </div>
+    <div ref={scrollRef} style={{flex:1,overflow:"auto",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
+      {messages.map(function(msg){var isMe=msg.isMe;return <div key={msg.id} style={{alignSelf:isMe?"flex-end":"flex-start",maxWidth:"80%"}}>
+        {!isMe&&<div style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}><div style={{width:20,height:20,borderRadius:"50%",background:T.charcoal,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>{msg.avatar}</div><span style={{fontSize:9,color:T.ash}}>{msg.from}</span></div>}
+        <div style={{padding:"9px 13px",borderRadius:16,marginLeft:isMe?0:25,background:isMe?"linear-gradient(135deg,"+T.flame+","+T.sunset+")":T.slate}}><p style={{fontSize:13,lineHeight:1.5}}>{msg.text}</p></div>
+      </div>;})}
+      {typing&&<div style={{alignSelf:"flex-start"}}><div style={{background:T.slate,borderRadius:16,padding:"9px 16px",display:"flex",gap:4,marginLeft:25}}>{[0,1,2].map(function(i){return <div key={i} style={{width:6,height:6,borderRadius:"50%",background:T.mist,animation:"typing 1.2s ease "+(i*0.2)+"s infinite"}}/>;})}</div></div>}
+    </div>
+    <div style={{padding:"9px 14px 13px",display:"flex",gap:8,borderTop:"1px solid "+T.glass}}>
+      <input value={input} onChange={function(e){setInput(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter")send()}} placeholder="Message the group..." style={{flex:1,padding:"10px 14px",borderRadius:20,background:T.glass,border:"1px solid "+T.glassBorder,color:T.white,fontSize:13,outline:"none"}}/>
+      <button onClick={send} style={{width:38,height:38,borderRadius:"50%",border:"none",background:input.trim()?"linear-gradient(135deg,"+T.flame+","+T.sunset+")":T.slate,color:T.white,cursor:"pointer"}}>↑</button>
+    </div>
+  </div>;
+}
+
+var DEMO_FLIGHT_POOL = [
+  {id:"fp1",name:"Sofia",age:26,avatar:"🧕",city:"Barcelona",destination:"Bali",flightNumber:"SQ 422",flightDate:"2026-03-15",departureTime:"08:45",bio:"Yoga & sunsets",interests:["Yoga","Photography"],seat:"Economy"},
+  {id:"fp2",name:"Marcus",age:29,avatar:"👨🏾",city:"London",destination:"Bali",flightNumber:"SQ 422",flightDate:"2026-03-15",departureTime:"08:45",bio:"Anime nerd & foodie",interests:["Anime","Food"],seat:"Business"},
+  {id:"fp3",name:"Priya",age:27,avatar:"👩🏽",city:"Mumbai",destination:"Bali",flightNumber:"SQ 422",flightDate:"2026-03-15",departureTime:"08:45",bio:"Island hopping & cocktails",interests:["Sailing","History"],seat:"Economy"},
+  {id:"fp4",name:"Liam",age:28,avatar:"🧑🏻",city:"Dublin",destination:"Bali",flightNumber:"SQ 422",flightDate:"2026-03-15",departureTime:"08:45",bio:"Backpacker & coffee addict",interests:["Coffee","Motorbikes"],seat:"Economy"},
+];
+
+function FlightPoolScreen({ userProfile }) {
+  var [step, setStep] = useState("enter");
+  var [flightNumber, setFlightNumber] = useState("");
+  var [destination, setDestination] = useState("");
+  var [flightDate, setFlightDate] = useState("");
+  var [departureTime, setDepartureTime] = useState("");
+  var [loading, setLoading] = useState(false);
+  var [poolPeople, setPoolPeople] = useState([]);
+  var [myFlight, setMyFlight] = useState(null);
+  var [sentRequests, setSentRequests] = useState([]);
+  var [showGroupChat, setShowGroupChat] = useState(false);
+  var inputSt = {width:"100%",padding:"12px 14px",borderRadius:12,border:"1px solid "+T.glassBorder,background:T.glass,color:T.white,fontSize:13,outline:"none",marginBottom:10,colorScheme:"dark"};
+  var labelSt = {fontSize:10,color:T.ash,textTransform:"uppercase",letterSpacing:2,marginBottom:6,display:"block"};
+  function search() {
+    if(!flightNumber.trim()||!destination.trim()||!flightDate)return;
+    setLoading(true);
+    setTimeout(function(){setMyFlight({flightNumber:flightNumber.toUpperCase(),destination,flightDate,departureTime});setPoolPeople(DEMO_FLIGHT_POOL);setLoading(false);setStep("results");},1500);
+  }
+  if(showGroupChat&&myFlight){return <FlightGroupChat flight={myFlight} people={poolPeople} userProfile={userProfile} onBack={function(){setShowGroupChat(false);}}/>;}
+  if(step==="enter"){return <div style={{flex:1,overflow:"auto",padding:"0 16px 24px"}}>
+    <div style={{textAlign:"center",padding:"24px 0 20px"}}><div style={{fontSize:52,marginBottom:8}}>🛫</div>
+      <h2 style={{fontFamily:"'Fraunces',serif",fontSize:24,fontWeight:900,background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>Flight Pool</h2>
+      <p style={{color:T.ash,fontSize:12,marginTop:6,lineHeight:1.6}}>Enter your flight and connect with travelers on the same plane</p>
+    </div>
+    <Glass style={{padding:18}}>
+      <span style={labelSt}>Flight number</span><input value={flightNumber} onChange={function(e){setFlightNumber(e.target.value)}} placeholder="e.g. SQ 422, BA 117" style={inputSt}/>
+      <span style={labelSt}>Destination</span><input value={destination} onChange={function(e){setDestination(e.target.value)}} placeholder="e.g. Bali, Tokyo" style={inputSt}/>
+      <div style={{display:"flex",gap:8}}>
+        <div style={{flex:1}}><span style={labelSt}>Date</span><input type="date" value={flightDate} onChange={function(e){setFlightDate(e.target.value)}} style={inputSt}/></div>
+        <div style={{flex:1}}><span style={labelSt}>Time</span><input type="time" value={departureTime} onChange={function(e){setDepartureTime(e.target.value)}} style={inputSt}/></div>
+      </div>
+      <button onClick={search} disabled={loading||!flightNumber||!destination||!flightDate} style={{width:"100%",padding:"13px",borderRadius:12,border:"none",background:(!flightNumber||!destination||!flightDate)?T.slate:"linear-gradient(135deg,"+T.flame+","+T.sunset+")",color:T.white,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+        {loading?"Searching... ✈️":"Find Flight Mates 🔍"}
+      </button>
+    </Glass>
+  </div>;}
+  return <div style={{flex:1,overflow:"auto",padding:"0 0 16px"}}>
+    <div style={{margin:"0 16px 14px",padding:"14px 16px",borderRadius:16,background:T.flame+"18",border:"1px solid "+T.flame+"33"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:20}}>✈️</span><div><p style={{fontWeight:700,fontSize:15}}>{myFlight.flightNumber}</p><p style={{fontSize:11,color:T.ash}}>to {myFlight.destination}</p></div></div>
+        <div style={{textAlign:"right"}}><p style={{fontSize:12,color:T.coral,fontWeight:600}}>{myFlight.departureTime||"—"}</p><p style={{fontSize:10,color:T.ash}}>{myFlight.flightDate}</p></div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <p style={{fontSize:11,color:T.mint}}>{poolPeople.length} travelers on this flight</p>
+        <button onClick={function(){setStep("enter");setPoolPeople([]);}} style={{background:"none",border:"1px solid "+T.glassBorder,borderRadius:8,color:T.mist,fontSize:10,padding:"3px 10px",cursor:"pointer"}}>Change</button>
+      </div>
+    </div>
+    <div onClick={function(){setShowGroupChat(true);showToast({icon:"✈️",title:"Joined flight group!",body:poolPeople.length+" travelers in chat",color:"rgba(91,91,255,0.95)});}} style={{margin:"0 16px 14px",padding:"12px 14px",borderRadius:14,cursor:"pointer",background:T.electric+"18",border:"1px solid "+T.electric+"33",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:38,height:38,borderRadius:10,background:T.electric+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💬</div>
+      <div style={{flex:1}}><p style={{fontSize:13,fontWeight:600}}>Flight Group Chat</p><p style={{fontSize:11,color:T.ash}}>All {poolPeople.length} travelers · Tap to join</p></div>
+      <span style={{color:T.violet,fontSize:18}}>›</span>
+    </div>
+    <p style={{fontSize:10,color:T.ash,textTransform:"uppercase",letterSpacing:2,padding:"0 16px",marginBottom:10}}>Travelers on your flight</p>
+    {poolPeople.map(function(person,i){var sent=sentRequests.includes(person.id);
+      return <div key={person.id} style={{margin:"0 16px 10px",padding:"14px",borderRadius:16,background:T.glass,border:"1px solid "+T.glassBorder}}>
+        <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+          <div style={{width:50,height:50,borderRadius:"50%",background:T.charcoal,border:"2px solid "+T.flame+"44",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{person.avatar}</div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}><span style={{fontWeight:600,fontSize:14}}>{person.name}</span><span style={{fontSize:11,color:T.ash}}>{person.age}</span><span style={{marginLeft:"auto",fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:6,background:T.sky+"22",color:T.sky}}>{person.seat}</span></div>
+            <p style={{fontSize:11,color:T.ash,marginBottom:4}}>📍 {person.city}</p>
+            <p style={{fontSize:12,color:T.mist,lineHeight:1.5,marginBottom:8}}>{person.bio}</p>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={function(){setSentRequests(function(p){return p.concat([person.id]);});showToast({icon:"👋",title:"Hello sent to "+person.name+"!",color:"rgba(255,65,54,0.9)"});}} style={{flex:1,padding:"8px",borderRadius:10,border:"none",cursor:sent?"default":"pointer",fontSize:11,fontWeight:600,background:sent?T.mint+"22":"linear-gradient(135deg,"+T.flame+","+T.sunset+")",color:sent?T.mint:T.white}}>
+                {sent?"✓ Sent":"👋 Say Hello"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>;
+    })}
+  </div>;
+}
+
 function TripsScreen({ matches, userId }) {
   var tripsHook = useTrips(isDemo ? null : userId);
   var [demoTrips, setDemoTrips] = useState([
@@ -1194,7 +1316,8 @@ export default function App() {
   var tabs = [
     { id:"discover", icon:"🔥", label:"Discover" },
     { id:"chats", icon:"💬", label:"Chats" },
-    { id:"trips", icon:"✈️", label:"Trips" },
+    { id:"flights", icon:"🛫", label:"Flights" },
+    { id:"trips", icon:"🗺️", label:"Trips" },
     { id:"profile", icon:"👤", label:"Profile" },
   ];
 
@@ -1217,6 +1340,7 @@ export default function App() {
 
       {screen==="discover" && <DiscoverScreen onMatch={handleMatch} matches={matches} userId={userId} userProfile={userProfile} />}
       {screen==="chats" && <ChatsListScreen matches={matches} userId={userId} onOpenChat={setActiveChat} />}
+      {screen==="flights" && <FlightPoolScreen userProfile={userProfile} />}
       {screen==="trips" && <TripsScreen matches={matches} userId={userId} />}
       {screen==="profile" && <ProfileScreen matchCount={matches.length} userId={userId} userProfile={userProfile} onSignOut={handleSignOut} onProfileUpdate={function(updated){ /* future: sync to Supabase */ }} />}
 
