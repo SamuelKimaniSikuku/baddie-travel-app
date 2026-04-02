@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth, useProfile, useDiscovery, useMatches, useConversations, useChat, useTrips } from "./hooks/useSupabase";
 import { isDemo } from "./lib/supabase";
-import { SocialAuthButtons, NotificationSettings, PremiumPaywall, AdminVerificationDashboard } from "./components/PremiumFeatures";
-import { ProfileMediaSection } from "./components/PhotoVerification";
+import AdminDashboard from "./components/AdminDashboard";
 import { profilesService } from "./services/profiles";
 import { authService } from "./services/auth";
 
@@ -993,7 +992,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
             padding:"7px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:500,
             background: vibe===v ? "linear-gradient(135deg,"+T.flame+","+T.sunset+")" : T.glass,
             color: vibe===v ? T.white : T.mist,
-            borderWidth: vibe===v ? 0 : 1, borderStyle: "solid", borderColor: T.glassBorder,
+            border: vibe===v ? "none" : "1px solid "+T.glassBorder,
             transition:"all 0.15s" }}>{v}</button>;
         })}
       </div>
@@ -1006,7 +1005,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
             flex:1, padding:"9px 4px", borderRadius:12, border:"none", cursor:"pointer", fontSize:11, fontWeight:500,
             background: budget===b ? "linear-gradient(135deg,"+T.gold+"cc,"+T.sunset+"cc)" : T.glass,
             color: budget===b ? T.midnight : T.mist,
-            borderWidth: budget===b ? 0 : 1, borderStyle: "solid", borderColor: T.glassBorder,
+            border: budget===b ? "none" : "1px solid "+T.glassBorder,
             transition:"all 0.15s" }}>{b}</button>;
         })}
       </div>
@@ -1020,7 +1019,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
             padding:"6px 13px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:500,
             background: on ? T.electric+"33" : T.glass,
             color: on ? T.violet : T.mist,
-            borderColor: on ? T.violet+"66" : T.glassBorder,
+            border: on ? "1px solid "+T.violet+"66" : "1px solid "+T.glassBorder,
             transition:"all 0.15s" }}>{interest}</button>;
         })}
       </div>
@@ -1041,7 +1040,6 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
 // ══════════════════════════════════════════════════════════════
 function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUpdate }) {
   var [editMode, setEditMode] = useState(false);
-  var [activeSection, setActiveSection] = useState(null);
   var [localProfile, setLocalProfile] = useState(userProfile);
 
   var displayName = localProfile?.name || "You";
@@ -1059,9 +1057,6 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
     }
   }
 
-  if (activeSection === "media") return <div style={{flex:1,overflow:"auto",padding:"16px",background:"#0A0A14"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16,display:"block"}}>← Back</button><ProfileMediaSection userId={user?.id} photos={[]} verifyStatus="unverified" onPhotosUpdate={()=>{}} onVerifyComplete={()=>{}}/></div>;
-  if (activeSection === "notifications") return <div style={{flex:1,overflow:"auto",padding:"16px",background:"#0A0A14"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16,display:"block"}}>← Back</button><NotificationSettings userId={user?.id} profile={{}} /></div>;
-  if (activeSection === "premium") return <div style={{flex:1,overflow:"auto",background:"#0A0A14"}}><PremiumPaywall currentPlan="free" userId={user?.id} onUpgrade={()=>setActiveSection(null)} onClose={()=>setActiveSection(null)}/></div>;
   if (editMode) {
     return <EditProfileScreen
       userProfile={localProfile}
@@ -1102,14 +1097,12 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
     {[
       { icon:"👤", label:"Edit Profile", action: function(){ setEditMode(true); } },
       { icon:"🎯", label:"Travel Preferences", action: function(){ setEditMode(true); } },
-      { icon:"👑", label:"Go Premium", action: function(){ setActiveSection("premium"); } },
-      { icon:"📸", label:"Photos & Verify ID", action: function(){ setActiveSection("media"); } },
-    { icon:"🔔", label:"Notifications", action: function(){ setActiveSection("notifications"); } },
+      { icon:"🔔", label:"Notifications", action: null },
       { icon:"🔒", label:"Privacy", action: null },
       { icon:"🎨", label:"Appearance", action: null },
       { icon:"❓", label:"Help", action: null },
     ].map(function(item, i){
-      return <div key={i} onClick={function(){ if(item.action) item.action(); }} style={{
+      return <div key={i} onClick={item.action || undefined} style={{
         display:"flex", alignItems:"center", gap:12, padding:"13px 14px", borderRadius:12, cursor: item.action ? "pointer" : "default",
         background: item.action ? "transparent" : "transparent",
         transition:"background 0.15s" }}>
@@ -1127,7 +1120,7 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
 // MAIN APP
 // ══════════════════════════════════════════════════════════════
 export default function App() {
-  if (window.location.pathname === "/admin") return <AdminDashboard />; {
+  if (typeof window !== "undefined" && window.location.pathname === "/admin") { return <AdminDashboard />; }
   var auth = useAuth();
   var [screen, setScreen] = useState("discover");
   var [demoMatches, setDemoMatches] = useState([TRAVELERS[0], TRAVELERS[2]]);
@@ -1141,7 +1134,7 @@ export default function App() {
 
   var userProfile = isDemo
     ? { name:"You", avatar:"😎", vibe:"Adventurous", budget:"Mid-range", interests:["Hiking","Food","Photography"] }
-    : profileHook.profile;
+    : (profileHook.profile || { name: auth.user?.user_metadata?.name || "Traveler", avatar:"😎", email: auth.user?.email || "" });
 
   var matches = isDemo ? demoMatches : (matchesHook.matches || []);
   var isAuthed = isDemo ? manualAuth : !!auth.user;
