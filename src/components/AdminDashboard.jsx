@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 // Route: /admin (protect with ADMIN_EMAIL check)
 // ═══════════════════════════════════════════════════════════════
 
-const ADMIN_EMAILS = ["YOUR-REAL-EMAIL@gmail.com", "explorer@baddie.app"]; // Add your email here
+const ADMIN_EMAILS = ["your-actual-email@gmail.com", "explorer@baddie.app"]; // Add your email here
 
 const C = {
   bg: "#0A0A14", card: "#14142B", border: "rgba(255,255,255,0.08)",
