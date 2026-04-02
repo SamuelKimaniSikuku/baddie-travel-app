@@ -993,7 +993,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
             padding:"7px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:500,
             background: vibe===v ? "linear-gradient(135deg,"+T.flame+","+T.sunset+")" : T.glass,
             color: vibe===v ? T.white : T.mist,
-            border: vibe===v ? "none" : "1px solid "+T.glassBorder,
+            borderWidth: vibe===v ? 0 : 1, borderStyle: "solid", borderColor: T.glassBorder,
             transition:"all 0.15s" }}>{v}</button>;
         })}
       </div>
@@ -1006,7 +1006,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
             flex:1, padding:"9px 4px", borderRadius:12, border:"none", cursor:"pointer", fontSize:11, fontWeight:500,
             background: budget===b ? "linear-gradient(135deg,"+T.gold+"cc,"+T.sunset+"cc)" : T.glass,
             color: budget===b ? T.midnight : T.mist,
-            border: budget===b ? "none" : "1px solid "+T.glassBorder,
+            borderWidth: budget===b ? 0 : 1, borderStyle: "solid", borderColor: T.glassBorder,
             transition:"all 0.15s" }}>{b}</button>;
         })}
       </div>
