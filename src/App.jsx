@@ -1127,6 +1127,7 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
 // MAIN APP
 // ══════════════════════════════════════════════════════════════
 export default function App() {
+  if (window.location.pathname === "/admin") return <AdminDashboard />; {
   var auth = useAuth();
   var [screen, setScreen] = useState("discover");
   var [demoMatches, setDemoMatches] = useState([TRAVELERS[0], TRAVELERS[2]]);
