@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth, useProfile, useDiscovery, useMatches, useConversations, useChat, useTrips } from "./hooks/useSupabase";
 import { isDemo } from "./lib/supabase";
 import { SocialAuthButtons, NotificationSettings, PremiumPaywall, AdminVerificationDashboard } from "./components/PremiumFeatures";
-import { SocialAuthButtons, NotificationSettings, PremiumPaywall, AdminVerificationDashboard } from "./components/PremiumFeatures";
 import { ProfileMediaSection } from "./components/PhotoVerification";
 import { profilesService } from "./services/profiles";
 import { authService } from "./services/auth";
@@ -1099,8 +1098,9 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
     {[
       { icon:"👤", label:"Edit Profile", action: function(){ setEditMode(true); } },
       { icon:"🎯", label:"Travel Preferences", action: function(){ setEditMode(true); } },
-      { icon:"📸", label:"Photos & Verify ID", action:"media" },
-    { icon:"🔔", label:"Notifications", action: null },
+      { icon:"👑", label:"Go Premium", action: function(){ setActiveSection("premium"); } },
+      { icon:"📸", label:"Photos & Verify ID", action: function(){ setActiveSection("media"); } },
+    { icon:"🔔", label:"Notifications", action: function(){ setActiveSection("notifications"); } },
       { icon:"🔒", label:"Privacy", action: null },
       { icon:"🎨", label:"Appearance", action: null },
       { icon:"❓", label:"Help", action: null },
