@@ -1041,6 +1041,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
 // ══════════════════════════════════════════════════════════════
 function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUpdate }) {
   var [editMode, setEditMode] = useState(false);
+  var [activeSection, setActiveSection] = useState(null);
   var [localProfile, setLocalProfile] = useState(userProfile);
 
   var displayName = localProfile?.name || "You";
@@ -1058,6 +1059,9 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
     }
   }
 
+  if (activeSection === "media") return <div style={{position:"fixed",inset:0,zIndex:50,background:"#0A0A14",overflow:"auto",padding:"16px"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16}}>←</button><ProfileMediaSection userId={user?.id} photos={[]} verifyStatus="unverified" onPhotosUpdate={()=>{}} onVerifyComplete={()=>{}}/></div>;
+  if (activeSection === "notifications") return <div style={{position:"fixed",inset:0,zIndex:50,background:"#0A0A14",overflow:"auto",padding:"16px"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16}}>←</button><NotificationSettings userId={user?.id} profile={{}} /></div>;
+  if (activeSection === "premium") return <PremiumPaywall currentPlan="free" userId={user?.id} onUpgrade={()=>setActiveSection(null)} onClose={()=>setActiveSection(null)}/>;
   if (editMode) {
     return <EditProfileScreen
       userProfile={localProfile}
