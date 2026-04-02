@@ -1059,9 +1059,9 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
     }
   }
 
-  if (activeSection === "media") return <div style={{position:"fixed",inset:0,zIndex:50,background:"#0A0A14",overflow:"auto",padding:"16px"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16}}>←</button><ProfileMediaSection userId={user?.id} photos={[]} verifyStatus="unverified" onPhotosUpdate={()=>{}} onVerifyComplete={()=>{}}/></div>;
-  if (activeSection === "notifications") return <div style={{position:"fixed",inset:0,zIndex:50,background:"#0A0A14",overflow:"auto",padding:"16px"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16}}>←</button><NotificationSettings userId={user?.id} profile={{}} /></div>;
-  if (activeSection === "premium") return <PremiumPaywall currentPlan="free" userId={user?.id} onUpgrade={()=>setActiveSection(null)} onClose={()=>setActiveSection(null)}/>;
+  if (activeSection === "media") return <div style={{flex:1,overflow:"auto",padding:"16px",background:"#0A0A14"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16,display:"block"}}>← Back</button><ProfileMediaSection userId={user?.id} photos={[]} verifyStatus="unverified" onPhotosUpdate={()=>{}} onVerifyComplete={()=>{}}/></div>;
+  if (activeSection === "notifications") return <div style={{flex:1,overflow:"auto",padding:"16px",background:"#0A0A14"}}><button onClick={()=>setActiveSection(null)} style={{background:"none",border:"none",color:"#A0A0BE",fontSize:20,cursor:"pointer",marginBottom:16,display:"block"}}>← Back</button><NotificationSettings userId={user?.id} profile={{}} /></div>;
+  if (activeSection === "premium") return <div style={{flex:1,overflow:"auto",background:"#0A0A14"}}><PremiumPaywall currentPlan="free" userId={user?.id} onUpgrade={()=>setActiveSection(null)} onClose={()=>setActiveSection(null)}/></div>;
   if (editMode) {
     return <EditProfileScreen
       userProfile={localProfile}
