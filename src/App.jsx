@@ -1020,7 +1020,7 @@ function EditProfileScreen({ userProfile, onSave, onBack }) {
             padding:"6px 13px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:500,
             background: on ? T.electric+"33" : T.glass,
             color: on ? T.violet : T.mist,
-            border: on ? "1px solid "+T.violet+"66" : "1px solid "+T.glassBorder,
+            borderColor: on ? T.violet+"66" : T.glassBorder,
             transition:"all 0.15s" }}>{interest}</button>;
         })}
       </div>

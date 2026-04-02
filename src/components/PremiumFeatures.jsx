@@ -532,7 +532,7 @@ export function AdminVerificationDashboard({ adminUserId }) {
                   <button onClick={() => updateStatus(sub.id, sub.user_id, "verified")} disabled={processing} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${T.mint},${T.lime})`, color: T.midnight, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     ✅ Approve
                   </button>
-                  <button onClick={() => updateStatus(sub.id, sub.user_id, "rejected")} disabled={processing} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: T.rose + "22", border: `1px solid ${T.rose}44`, color: T.rose, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  <button onClick={() => updateStatus(sub.id, sub.user_id, "rejected")} disabled={processing} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: T.rose + "22", borderColor: T.rose+"44", color: T.rose, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     ❌ Reject
                   </button>
                 </div>
