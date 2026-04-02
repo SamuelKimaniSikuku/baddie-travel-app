@@ -1109,7 +1109,7 @@ function ProfileScreen({ matchCount, userId, userProfile, onSignOut, onProfileUp
       { icon:"🎨", label:"Appearance", action: null },
       { icon:"❓", label:"Help", action: null },
     ].map(function(item, i){
-      return <div key={i} onClick={item.action || undefined} style={{
+      return <div key={i} onClick={function(){ if(item.action) item.action(); }} style={{
         display:"flex", alignItems:"center", gap:12, padding:"13px 14px", borderRadius:12, cursor: item.action ? "pointer" : "default",
         background: item.action ? "transparent" : "transparent",
         transition:"background 0.15s" }}>
