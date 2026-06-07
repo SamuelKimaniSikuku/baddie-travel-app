@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { supabase, isDemo, getStorageUrl } from '../lib/supabase';
+import { calcCompatibility } from '../lib/compatibility';
 
 // Demo data for offline mode
 const DEMO_PROFILES = [
@@ -88,18 +89,34 @@ class ProfilesService {
   async discoverTravelers(userId, { limit = 20, offset = 0 } = {}) {
     if (isDemo) return { data: DEMO_PROFILES, error: null };
 
-    const { data, error } = await supabase
+    // PostgREST `in` takes a literal value list, not a subquery — so we fetch
+    // the IDs to exclude first, then filter. RLS lets users read their own
+    // swipes and blocks, so these run under the anon key.
+    const [{ data: swiped }, { data: blocked }] = await Promise.all([
+      supabase.from('swipes').select('swiped_id').eq('swiper_id', userId),
+      supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
+    ]);
+
+    const excludeIds = [
+      userId,
+      ...(swiped?.map(s => s.swiped_id) || []),
+      ...(blocked?.map(b => b.blocked_id) || []),
+    ];
+
+    let query = supabase
       .from('profiles')
       .select(`
         *,
         destinations!inner(destination, destination_emoji, date_display, start_date, end_date)
       `)
-      .neq('id', userId)
-      .not('id', 'in', `(SELECT swiped_id FROM swipes WHERE swiper_id = '${userId}')`) // Not already swiped
-      .not('id', 'in', `(SELECT blocked_id FROM blocks WHERE blocker_id = '${userId}')`) // Not blocked
       .eq('destinations.is_active', true)
       .order('last_seen', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    // PostgREST expects a parenthesized list: (id1,id2,...)
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+
+    const { data, error } = await query;
 
     // Flatten destination data
     const profiles = data?.map(p => ({
@@ -107,6 +124,8 @@ class ProfilesService {
       destination: p.destinations?.[0]?.destination,
       destination_emoji: p.destinations?.[0]?.destination_emoji,
       date_display: p.destinations?.[0]?.date_display,
+      start_date: p.destinations?.[0]?.start_date,
+      end_date: p.destinations?.[0]?.end_date,
     }));
 
     return { data: profiles, error };
@@ -126,16 +145,7 @@ class ProfilesService {
 
   // Calculate compatibility score between two users
   calcCompatibility(userProfile, otherProfile) {
-    let score = 50;
-    if (userProfile.vibe === otherProfile.vibe) score += 20;
-    if (userProfile.budget === otherProfile.budget) score += 10;
-    const sharedInterests = (userProfile.interests || [])
-      .filter(i => (otherProfile.interests || []).includes(i)).length;
-    score += sharedInterests * 8;
-    const sharedLanguages = (userProfile.languages || [])
-      .filter(l => (otherProfile.languages || []).includes(l)).length;
-    score += sharedLanguages * 5;
-    return Math.min(score, 99);
+    return calcCompatibility(userProfile, otherProfile);
   }
 
   // Report a user

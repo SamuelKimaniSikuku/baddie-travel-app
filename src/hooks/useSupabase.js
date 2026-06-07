@@ -241,21 +241,23 @@ export function useTrips(userId) {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!userId) return;
-    tripsService.getTrips(userId).then(({ data }) => {
-      setTrips(data || []);
-      setLoading(false);
-    });
+    const { data } = await tripsService.getTrips(userId);
+    setTrips(data || []);
+    setLoading(false);
   }, [userId]);
+
+  useEffect(() => { refresh(); }, [refresh]);
 
   const createTrip = useCallback(async (tripData) => {
     const result = await tripsService.createTrip(userId, tripData);
-    if (result.data) setTrips(prev => [...prev, result.data]);
+    // Reload the full list so members/joins are populated consistently.
+    if (result.data) await refresh();
     return result;
-  }, [userId]);
+  }, [userId, refresh]);
 
-  return { trips, loading, createTrip };
+  return { trips, loading, createTrip, refresh };
 }
 
 // ── Expenses Hook ──

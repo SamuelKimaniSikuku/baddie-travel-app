@@ -112,10 +112,14 @@ export function useNotifications(userId) {
   }
 
   async function saveToken(uid) {
-    // For web push, we use the Notification API directly
-    // For production, integrate with FCM or OneSignal
+    // For web push, we use the Notification API directly.
+    // For production, integrate with FCM or OneSignal.
     try {
-      const registration = await navigator.serviceWorker.ready;
+      // Use getRegistration() (resolves immediately) rather than `.ready`,
+      // which never resolves when no service worker is registered.
+      if (!("serviceWorker" in navigator)) return;
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) return; // No SW yet — skip token persistence.
       // Save a placeholder token - in production replace with real FCM token
       const token = `web_${uid}_${Date.now()}`;
       await supabase.from("push_tokens").upsert({
@@ -428,124 +432,9 @@ export function SuperLikeButton({ plan, superLikes, onSuperLike, onUpgrade }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════
-// 6. ADMIN VERIFICATION DASHBOARD
-// ══════════════════════════════════════════════════════════════
-export function AdminVerificationDashboard({ adminUserId }) {
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [note, setNote] = useState("");
-  const [processing, setProcessing] = useState(false);
+// NOTE: the admin-side verification review UI lives in
+// src/components/AdminDashboard.jsx (Verifications tab). The duplicate
+// that used to live here was removed — it never flipped profiles.verified
+// and used a stale status vocabulary.
 
-  useEffect(() => {
-    loadSubmissions();
-  }, []);
-
-  async function loadSubmissions() {
-    setLoading(true);
-    const { data } = await supabase
-      .from("verifications")
-      .select("*, profiles(name, avatar, city)")
-      .order("submitted_at", { ascending: false });
-    setSubmissions(data || []);
-    setLoading(false);
-  }
-
-  async function updateStatus(id, userId, status) {
-    setProcessing(true);
-    await supabase.from("verifications").update({
-      status, notes: note, reviewed_at: new Date().toISOString(),
-    }).eq("id", id);
-    await loadSubmissions();
-    setSelected(null);
-    setNote("");
-    setProcessing(false);
-  }
-
-  const statusColors = { pending: T.gold, verified: T.mint, rejected: T.rose };
-  const statusIcons  = { pending: "⏳", verified: "✅", rejected: "❌" };
-
-  if (loading) return (
-    <div style={{ padding: 24, textAlign: "center" }}>
-      <div style={{ fontSize: 32, marginBottom: 8 }}>🔄</div>
-      <p style={{ color: T.ash, fontSize: 12 }}>Loading submissions...</p>
-    </div>
-  );
-
-  return (
-    <div style={{ padding: "0 0 24px" }}>
-      <div style={{ padding: "14px 16px 10px" }}>
-        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 900 }}>Verification Admin</h2>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          {["pending","verified","rejected"].map(s => {
-            const count = submissions.filter(x => x.status === s).length;
-            return (
-              <div key={s} style={{ flex: 1, padding: "8px", borderRadius: 10, background: statusColors[s] + "15", border: `1px solid ${statusColors[s]}33`, textAlign: "center" }}>
-                <p style={{ fontSize: 16, fontWeight: 700, color: statusColors[s] }}>{count}</p>
-                <p style={{ fontSize: 9, color: T.ash, textTransform: "capitalize" }}>{s}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {submissions.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 40 }}>
-          <div style={{ fontSize: 44, marginBottom: 10 }}>🛡️</div>
-          <p style={{ color: T.ash, fontSize: 13 }}>No verification submissions yet</p>
-        </div>
-      ) : submissions.map(sub => (
-        <div key={sub.id} onClick={() => setSelected(selected?.id === sub.id ? null : sub)} style={{ margin: "0 16px 10px", padding: "14px", borderRadius: 16, background: T.glass, border: `1px solid ${sub.status === "pending" ? T.gold + "44" : T.glassBorder}`, cursor: "pointer" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: selected?.id === sub.id ? 12 : 0 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: T.charcoal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>{sub.profiles?.avatar || "😎"}</div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 600, fontSize: 13 }}>{sub.profiles?.name || "Unknown"}</p>
-              <p style={{ fontSize: 10, color: T.ash }}>{sub.doc_type?.replace("_", " ")} · {new Date(sub.submitted_at).toLocaleDateString()}</p>
-            </div>
-            <div style={{ padding: "4px 10px", borderRadius: 8, background: statusColors[sub.status] + "22", border: `1px solid ${statusColors[sub.status]}44` }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: statusColors[sub.status] }}>{statusIcons[sub.status]} {sub.status}</span>
-            </div>
-          </div>
-
-          {selected?.id === sub.id && (
-            <div onClick={e => e.stopPropagation()}>
-              {/* Document images */}
-              <div style={{ display: "grid", gridTemplateColumns: sub.back_path ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                {[{url: sub.front_path, label: "Front"}, sub.back_path && {url: sub.back_path, label: "Back"}, {url: sub.selfie_path, label: "Selfie"}].filter(Boolean).map(img => (
-                  <div key={img.label}>
-                    <p style={{ fontSize: 9, color: T.ash, marginBottom: 4, textAlign: "center" }}>{img.label}</p>
-                    <div style={{ borderRadius: 10, overflow: "hidden", background: T.charcoal, aspectRatio: "3/4" }}>
-                      <img src={img.url} alt={img.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Notes */}
-              <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Add a note (optional)..."
-                style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "1px solid " + T.glassBorder, background: T.glass, color: T.white, fontSize: 12, outline: "none", resize: "none", minHeight: 60, marginBottom: 10 }} />
-
-              {/* Actions */}
-              {sub.status === "pending" && (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => updateStatus(sub.id, sub.user_id, "verified")} disabled={processing} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${T.mint},${T.lime})`, color: T.midnight, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    ✅ Approve
-                  </button>
-                  <button onClick={() => updateStatus(sub.id, sub.user_id, "rejected")} disabled={processing} style={{ flex: 1, padding: "10px", borderRadius: 12, border: "none", background: T.rose + "22", borderColor: T.rose+"44", color: T.rose, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    ❌ Reject
-                  </button>
-                </div>
-              )}
-              {sub.status !== "pending" && sub.notes && (
-                <p style={{ fontSize: 11, color: T.ash, fontStyle: "italic" }}>Note: {sub.notes}</p>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default { SocialAuthButtons, NotificationSettings, PremiumPaywall, PlanBadge, SuperLikeButton, AdminVerificationDashboard };
+export default { SocialAuthButtons, NotificationSettings, PremiumPaywall, PlanBadge, SuperLikeButton };

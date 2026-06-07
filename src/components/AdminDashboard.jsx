@@ -6,7 +6,7 @@ import { supabase } from "../lib/supabase";
 // Route: /admin (protect with ADMIN_EMAIL check)
 // ═══════════════════════════════════════════════════════════════
 
-const ADMIN_EMAILS = ["samuelkimani@gmail.com", "explorer@baddie.app"]; // Add your email here
+const ADMIN_EMAILS = ["samuel.kimani.sikuku@gmail.com", "samuelkimani@gmail.com", "explorer@baddie.app"]; // Add your email here
 
 const C = {
   bg: "#0A0A14", card: "#14142B", border: "rgba(255,255,255,0.08)",
@@ -140,12 +140,13 @@ function UsersTab() {
 }
 
 // ── Verifications Tab ─────────────────────────────────────────
-function VerificationsTab() {
+function VerificationsTab({ adminId }) {
   const [subs, setSubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [note, setNote] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState("");
   const [filter, setFilter] = useState("pending");
 
   useEffect(() => { load(); }, []);
@@ -160,24 +161,43 @@ function VerificationsTab() {
     setLoading(false);
   }
 
-  async function updateStatus(id, userId, status) {
+  // Approve = mark the submission reviewed AND flip the trust badge on the
+  // profile. The profiles update only succeeds because the caller is an
+  // admin (see is_admin() RLS policy + reputation trigger in migration 002).
+  async function updateStatus(submissionUserId, decision) {
     setProcessing(true);
-    await supabase.from("verifications").update({
-      status, notes: note, reviewed_at: new Date().toISOString(),
-    }).eq("id", id);
+    setError("");
+    const reviewedAt = new Date().toISOString();
+
+    const { error: subErr } = await supabase.from("verifications").update({
+      status: decision, review_note: note || null, reviewed_at: reviewedAt, reviewer_id: adminId,
+    }).eq("user_id", submissionUserId);
+
+    const { error: profErr } = await supabase.from("profiles").update(
+      decision === "approved"
+        ? { verified: true, verify_status: "verified" }
+        : { verified: false, verify_status: "rejected" }
+    ).eq("id", submissionUserId);
+
+    if (subErr || profErr) {
+      setError((subErr || profErr).message || "Update failed — check admin permissions.");
+      setProcessing(false);
+      return;
+    }
+
     await load();
     setSelected(null);
     setNote("");
     setProcessing(false);
   }
 
-  const statusColor = { pending: C.gold, verified: C.mint, rejected: C.rose };
+  const statusColor = { pending: C.gold, approved: C.mint, rejected: C.rose };
   const filtered = subs.filter(s => filter === "all" || s.status === filter);
 
   return (
     <div>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {["pending", "verified", "rejected", "all"].map(f => {
+        {["pending", "approved", "rejected", "all"].map(f => {
           const count = f === "all" ? subs.length : subs.filter(s => s.status === f).length;
           return (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${filter === f ? (statusColor[f] || C.flame) : C.border}`, background: filter === f ? (statusColor[f] || C.flame) + "22" : C.card, color: filter === f ? (statusColor[f] || C.flame) : C.ash, fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "capitalize" }}>
@@ -221,14 +241,19 @@ function VerificationsTab() {
                   <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Add a review note (optional)..."
                     style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg, color: C.white, fontSize: 12, outline: "none", resize: "none", minHeight: 70, marginBottom: 12 }} />
 
+                  {error && (
+                    <div style={{ padding: "10px 12px", borderRadius: 10, background: C.rose + "18", border: `1px solid ${C.rose}44`, marginBottom: 10 }}>
+                      <p style={{ fontSize: 11, color: C.rose }}>⚠️ {error}</p>
+                    </div>
+                  )}
                   {sub.status === "pending" && (
                     <div style={{ display: "flex", gap: 10 }}>
-                      <button onClick={() => updateStatus(sub.id, sub.user_id, "verified")} disabled={processing}
-                        style={{ flex: 1, padding: "11px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${C.mint},${C.lime})`, color: "#0A0A14", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                        ✅ Approve
+                      <button onClick={() => updateStatus(sub.user_id, "approved")} disabled={processing}
+                        style={{ flex: 1, padding: "11px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${C.mint},${C.lime})`, color: "#0A0A14", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: processing ? 0.6 : 1 }}>
+                        {processing ? "Saving…" : "✅ Approve"}
                       </button>
-                      <button onClick={() => updateStatus(sub.id, sub.user_id, "rejected")} disabled={processing}
-                        style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${C.rose}44`, background: C.rose + "18", color: C.rose, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      <button onClick={() => updateStatus(sub.user_id, "rejected")} disabled={processing}
+                        style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${C.rose}44`, background: C.rose + "18", color: C.rose, fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: processing ? 0.6 : 1 }}>
                         ❌ Reject
                       </button>
                     </div>
@@ -236,7 +261,7 @@ function VerificationsTab() {
                   {sub.status !== "pending" && (
                     <div style={{ padding: "10px 12px", borderRadius: 10, background: C.slate + "44", fontSize: 11, color: C.mist }}>
                       Reviewed {sub.reviewed_at ? new Date(sub.reviewed_at).toLocaleDateString() : "—"}
-                      {sub.notes && ` · Note: ${sub.notes}`}
+                      {sub.review_note && ` · Note: ${sub.review_note}`}
                     </div>
                   )}
                 </div>
@@ -460,7 +485,7 @@ export default function AdminDashboard() {
         {/* Tab content */}
         {tab === "analytics"  && <AnalyticsTab stats={stats} />}
         {tab === "users"      && <UsersTab />}
-        {tab === "verify"     && <VerificationsTab />}
+        {tab === "verify"     && <VerificationsTab adminId={user.id} />}
         {tab === "reports"    && <ReportsTab />}
       </div>
     </div>

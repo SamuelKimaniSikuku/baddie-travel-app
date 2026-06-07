@@ -99,6 +99,57 @@ class TripsService {
     return { error };
   }
 
+  // ── Checklist (flattened itinerary items) ──
+
+  // Get all checklist items for a trip, flattened across itinerary days.
+  async getChecklist(tripId) {
+    if (isDemo) return { data: [], error: null };
+
+    const { data, error } = await supabase
+      .from('itinerary_days')
+      .select('id, day_number, itinerary_items(*)')
+      .eq('trip_id', tripId)
+      .order('day_number', { ascending: true });
+
+    if (error) return { data: [], error };
+
+    const items = (data || [])
+      .flatMap(d => (d.itinerary_items || []))
+      .sort((a, b) => (a.sort_order - b.sort_order) || (new Date(a.created_at) - new Date(b.created_at)));
+
+    return { data: items, error: null };
+  }
+
+  // Add a checklist item, auto-creating a default itinerary day if needed.
+  async addChecklistItem(tripId, title, addedBy) {
+    if (isDemo) return { data: null, error: null };
+
+    let { data: day } = await supabase
+      .from('itinerary_days')
+      .select('id')
+      .eq('trip_id', tripId)
+      .order('day_number', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!day) {
+      const { data: created, error: dayErr } = await supabase
+        .from('itinerary_days')
+        .insert({ trip_id: tripId, day_number: 1, title: 'Checklist' })
+        .select('id')
+        .single();
+      if (dayErr) return { data: null, error: dayErr };
+      day = created;
+    }
+
+    const { data, error } = await supabase
+      .from('itinerary_items')
+      .insert({ day_id: day.id, title, added_by: addedBy })
+      .select()
+      .single();
+    return { data, error };
+  }
+
   // ── Itinerary ──
 
   // Add a day to itinerary
