@@ -13,3 +13,4 @@ export { matchingService } from './matching';
 export { messagingService } from './messaging';
 export { tripsService } from './trips';
 export { expensesService } from './expenses';
+export { flightsService } from './flights';

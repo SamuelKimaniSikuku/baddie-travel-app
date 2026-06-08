@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { T } from "../theme";
+import { flightsService } from "../services/flights";
 
 var SHARE_OPTIONS = [
   { id:"flight", icon:"✈️", label:"Flight", color:T.sky },
@@ -28,19 +29,23 @@ export function FlightCard({ data, isMine }) {
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <div style={{ textAlign:"center" }}>
           <div style={{ fontSize:16, fontWeight:800, fontFamily:"'Fraunces',serif" }}>{data.from}</div>
+          {data.departTime && <div style={{ fontSize:9, fontWeight:600, color:T.sky }}>{data.departTime}</div>}
           <div style={{ fontSize:8, color:T.ash }}>{data.fromCity}</div>
         </div>
         <div style={{ flex:1, margin:"0 8px", height:1, background:T.mist+"44", position:"relative" }}>
-          <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", fontSize:8, color:T.mist, background:T.midnight, padding:"0 4px" }}>{data.duration||"—"}</div>
+          <div style={{ position:"absolute", left:"50%", transform:"translateX(-50%)", top:-7, fontSize:8, color:T.mist, background:T.midnight, padding:"0 4px", whiteSpace:"nowrap" }}>
+            {data.duration||"—"}{typeof data.stops === "number" ? " · " + (data.stops === 0 ? "Direct" : data.stops + " stop" + (data.stops > 1 ? "s" : "")) : ""}
+          </div>
         </div>
         <div style={{ textAlign:"center" }}>
           <div style={{ fontSize:16, fontWeight:800, fontFamily:"'Fraunces',serif" }}>{data.to}</div>
+          {data.arriveTime && <div style={{ fontSize:9, fontWeight:600, color:T.sky }}>{data.arriveTime}</div>}
           <div style={{ fontSize:8, color:T.ash }}>{data.toCity}</div>
         </div>
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", fontSize:10 }}>
         <span style={{ color:T.mist }}>{data.date||""}</span>
-        <span style={{ fontWeight:700, color:T.gold }}>${data.price}</span>
+        <span style={{ fontWeight:700, color:T.gold }}>${data.price}{data.currency && data.currency !== "USD" ? " " + data.currency : ""}</span>
       </div>
     </div>
     <button style={{ width:"100%", padding:7, border:"none", borderTop:"1px solid "+T.glassBorder,
@@ -136,7 +141,30 @@ export function ShareSheet({ onClose, onShare }) {
   var [fd, setFd] = useState({airline:"",flight_number:"",from:"",fromCity:"",to:"",toCity:"",price:"",date:"",duration:""});
   var [pd, setPd] = useState({question:"",options:["",""]});
   var [cd, setCd] = useState({title:"",items:["",""]});
+  // Flight search state
+  var [flightMode, setFlightMode] = useState("search"); // "search" | "manual"
+  var [sp, setSp] = useState({ origin:"", destination:"", date:"" });
+  var [results, setResults] = useState(null);
+  var [searching, setSearching] = useState(false);
+  var [searchErr, setSearchErr] = useState("");
   var inp = { width:"100%", padding:"10px 12px", borderRadius:10, border:"1px solid "+T.glassBorder, background:T.glass, color:T.white, fontSize:12, outline:"none", marginBottom:7 };
+
+  async function searchFlights() {
+    if (!/^[A-Za-z]{3}$/.test((sp.origin||"").trim()) || !/^[A-Za-z]{3}$/.test((sp.destination||"").trim())) {
+      setSearchErr("Enter 3-letter airport codes (e.g. CDG, DPS)."); return;
+    }
+    if (!sp.date) { setSearchErr("Pick a departure date."); return; }
+    setSearchErr(""); setSearching(true); setResults(null);
+    var res = await flightsService.search({ origin: sp.origin.trim(), destination: sp.destination.trim(), date: sp.date });
+    setSearching(false);
+    if (res.error) { setSearchErr(res.error.message || "Search failed"); return; }
+    setResults(res.data || []);
+  }
+
+  function shareResult(r) {
+    onShare("flight", { ...r, status:"found" });
+    onClose();
+  }
 
   function submit() {
     if (selected==="flight") onShare("flight",{...fd, price:parseFloat(fd.price)||0, status:"found"});
@@ -169,22 +197,66 @@ export function ShareSheet({ onClose, onShare }) {
           <button onClick={function(){setSelected(null)}} style={{ background:"none", border:"none", color:T.mist, fontSize:16, cursor:"pointer" }}>←</button>
           <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:17 }}>✈️ Share Flight</h3>
         </div>
-        <input style={inp} placeholder="Airline" value={fd.airline} onChange={function(e){setFd({...fd,airline:e.target.value})}} />
-        <input style={inp} placeholder="Flight # (e.g. SQ 726)" value={fd.flight_number} onChange={function(e){setFd({...fd,flight_number:e.target.value})}} />
-        <div style={{ display:"flex", gap:6 }}>
-          <input style={{...inp,flex:1}} placeholder="From (CDG)" value={fd.from} onChange={function(e){setFd({...fd,from:e.target.value})}} />
-          <input style={{...inp,flex:1}} placeholder="To (DPS)" value={fd.to} onChange={function(e){setFd({...fd,to:e.target.value})}} />
+
+        {/* Search / Manual tabs */}
+        <div style={{ display:"flex", gap:6, marginBottom:12, background:T.glass, borderRadius:10, padding:3 }}>
+          {[{id:"search",label:"🔎 Search"},{id:"manual",label:"✍️ Enter manually"}].map(function(tab){
+            var active = flightMode === tab.id;
+            return <button key={tab.id} onClick={function(){setFlightMode(tab.id)}} style={{
+              flex:1, padding:"8px", borderRadius:8, border:"none", cursor:"pointer", fontSize:11, fontWeight:600,
+              background: active ? T.flame : "transparent", color: active ? T.white : T.mist }}>{tab.label}</button>;
+          })}
         </div>
-        <div style={{ display:"flex", gap:6 }}>
-          <input style={{...inp,flex:1}} placeholder="Depart city" value={fd.fromCity} onChange={function(e){setFd({...fd,fromCity:e.target.value})}} />
-          <input style={{...inp,flex:1}} placeholder="Arrive city" value={fd.toCity} onChange={function(e){setFd({...fd,toCity:e.target.value})}} />
-        </div>
-        <div style={{ display:"flex", gap:6 }}>
-          <input style={{...inp,flex:1}} placeholder="Date (Mar 15)" value={fd.date} onChange={function(e){setFd({...fd,date:e.target.value})}} />
-          <input style={{...inp,flex:1}} placeholder="Price ($)" type="number" value={fd.price} onChange={function(e){setFd({...fd,price:e.target.value})}} />
-        </div>
-        <button onClick={submit} style={{ width:"100%", padding:"11px", borderRadius:12, border:"none",
-          background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white, fontSize:12, fontWeight:600, cursor:"pointer" }}>Share Flight ✈️</button>
+
+        {flightMode === "search" ? <>
+          <div style={{ display:"flex", gap:6 }}>
+            <input style={{...inp,flex:1,textTransform:"uppercase"}} maxLength={3} placeholder="From (CDG)" value={sp.origin} onChange={function(e){setSp({...sp,origin:e.target.value})}} />
+            <input style={{...inp,flex:1,textTransform:"uppercase"}} maxLength={3} placeholder="To (DPS)" value={sp.destination} onChange={function(e){setSp({...sp,destination:e.target.value})}} />
+          </div>
+          <input style={inp} type="date" value={sp.date} onChange={function(e){setSp({...sp,date:e.target.value})}} />
+          <button onClick={searchFlights} disabled={searching} style={{ width:"100%", padding:"11px", borderRadius:12, border:"none",
+            background: searching ? T.slate : "linear-gradient(135deg,"+T.sky+","+T.electric+")", color:T.white, fontSize:12, fontWeight:600, cursor: searching ? "default" : "pointer", marginBottom:8 }}>
+            {searching ? "Searching…" : "Search Flights 🔎"}
+          </button>
+          {searchErr && <p style={{ color:T.rose, fontSize:11, marginBottom:8 }}>⚠️ {searchErr}</p>}
+          {results && results.length === 0 && !searchErr && <p style={{ color:T.ash, fontSize:12 }}>No flights found for that route/date.</p>}
+          {results && results.map(function(r){
+            return <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 11px", marginBottom:7,
+              borderRadius:12, background:T.glass, border:"1px solid "+T.glassBorder }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ fontSize:11, fontWeight:600 }}>{r.airline}</span>
+                  <span style={{ fontSize:9, color:T.ash }}>{r.flight_number}</span>
+                </div>
+                <div style={{ fontSize:10, color:T.mist, marginTop:2 }}>
+                  {r.departTime} {r.from} → {r.arriveTime} {r.to} · {r.duration}{typeof r.stops==="number" ? " · "+(r.stops===0?"Direct":r.stops+" stop"+(r.stops>1?"s":"")) : ""}
+                </div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:13, fontWeight:700, color:T.gold }}>${r.price}</div>
+                <button onClick={function(){shareResult(r)}} style={{ marginTop:3, padding:"4px 10px", borderRadius:8, border:"none",
+                  background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white, fontSize:10, fontWeight:600, cursor:"pointer" }}>Share</button>
+              </div>
+            </div>;
+          })}
+        </> : <>
+          <input style={inp} placeholder="Airline" value={fd.airline} onChange={function(e){setFd({...fd,airline:e.target.value})}} />
+          <input style={inp} placeholder="Flight # (e.g. SQ 726)" value={fd.flight_number} onChange={function(e){setFd({...fd,flight_number:e.target.value})}} />
+          <div style={{ display:"flex", gap:6 }}>
+            <input style={{...inp,flex:1}} placeholder="From (CDG)" value={fd.from} onChange={function(e){setFd({...fd,from:e.target.value})}} />
+            <input style={{...inp,flex:1}} placeholder="To (DPS)" value={fd.to} onChange={function(e){setFd({...fd,to:e.target.value})}} />
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            <input style={{...inp,flex:1}} placeholder="Depart city" value={fd.fromCity} onChange={function(e){setFd({...fd,fromCity:e.target.value})}} />
+            <input style={{...inp,flex:1}} placeholder="Arrive city" value={fd.toCity} onChange={function(e){setFd({...fd,toCity:e.target.value})}} />
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            <input style={{...inp,flex:1}} placeholder="Date (Mar 15)" value={fd.date} onChange={function(e){setFd({...fd,date:e.target.value})}} />
+            <input style={{...inp,flex:1}} placeholder="Price ($)" type="number" value={fd.price} onChange={function(e){setFd({...fd,price:e.target.value})}} />
+          </div>
+          <button onClick={submit} style={{ width:"100%", padding:"11px", borderRadius:12, border:"none",
+            background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white, fontSize:12, fontWeight:600, cursor:"pointer" }}>Share Flight ✈️</button>
+        </>}
       </> : selected==="poll" ? <>
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
           <button onClick={function(){setSelected(null)}} style={{ background:"none", border:"none", color:T.mist, fontSize:16, cursor:"pointer" }}>←</button>
