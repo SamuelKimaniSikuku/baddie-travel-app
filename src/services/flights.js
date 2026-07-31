@@ -7,17 +7,33 @@ import { supabase, isDemo } from '../lib/supabase';
 
 // Sample results used in demo mode (no Supabase / no Amadeus keys),
 // so the search UI is fully usable without a backend.
-function demoResults({ origin, destination, date }) {
+function demoResults({ origin, destination, date, returnDate, adults }) {
   var from = (origin || 'CDG').toUpperCase();
   var to = (destination || 'DPS').toUpperCase();
-  return [
-    { id: 'd1', airline: 'Singapore Airlines', flight_number: 'SQ 726', from: from, to: to, fromCity: from, toCity: to,
-      departTime: '08:25', arriveTime: '18:40', date: date, duration: '14h 15m', stops: 1, price: 742, currency: 'USD' },
-    { id: 'd2', airline: 'Emirates', flight_number: 'EK 73', from: from, to: to, fromCity: from, toCity: to,
-      departTime: '14:10', arriveTime: '23:05', date: date, duration: '13h 55m', stops: 1, price: 815, currency: 'USD' },
-    { id: 'd3', airline: 'Qatar Airways', flight_number: 'QR 40', from: from, to: to, fromCity: from, toCity: to,
-      departTime: '21:30', arriveTime: '19:50', date: date, duration: '16h 20m', stops: 1, price: 698, currency: 'USD' },
+  var rt = !!returnDate;
+  var pax = Math.max(1, parseInt(adults, 10) || 1);
+  var base = [
+    { id: 'd1', airline: 'Singapore Airlines', flight_number: 'SQ 726', departTime: '08:25', arriveTime: '18:40', duration: '14h 15m', stops: 1, price: 742,
+      returnFlightNumber: 'SQ 725', returnDepartTime: '19:20', returnArriveTime: '06:15', returnDuration: '13h 55m', returnStops: 1 },
+    { id: 'd2', airline: 'Emirates', flight_number: 'EK 73', departTime: '14:10', arriveTime: '23:05', duration: '13h 55m', stops: 1, price: 815,
+      returnFlightNumber: 'EK 72', returnDepartTime: '02:40', returnArriveTime: '13:10', returnDuration: '14h 10m', returnStops: 1 },
+    { id: 'd3', airline: 'Qatar Airways', flight_number: 'QR 40', departTime: '21:30', arriveTime: '19:50', duration: '16h 20m', stops: 1, price: 698,
+      returnFlightNumber: 'QR 41', returnDepartTime: '08:05', returnArriveTime: '18:30', returnDuration: '15h 25m', returnStops: 1 },
   ];
+  return base.map(function(f){
+    return {
+      id: f.id, airline: f.airline, flight_number: f.flight_number, from: from, to: to, fromCity: from, toCity: to,
+      departTime: f.departTime, arriveTime: f.arriveTime, date: date, duration: f.duration, stops: f.stops,
+      price: (rt ? Math.round(f.price * 1.85) : f.price) * pax, currency: 'USD',
+      roundTrip: rt,
+      returnFlightNumber: rt ? f.returnFlightNumber : null,
+      returnDepartTime: rt ? f.returnDepartTime : null,
+      returnArriveTime: rt ? f.returnArriveTime : null,
+      returnDate: rt ? returnDate : null,
+      returnDuration: rt ? f.returnDuration : null,
+      returnStops: rt ? f.returnStops : null,
+    };
+  });
 }
 
 class FlightsService {
@@ -33,6 +49,7 @@ class FlightsService {
         origin: params.origin,
         destination: params.destination,
         date: params.date,
+        returnDate: params.returnDate || '',
         adults: params.adults || 1,
         currency: params.currency || 'USD',
       },

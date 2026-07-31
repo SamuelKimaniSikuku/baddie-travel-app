@@ -77,29 +77,53 @@ function fmtTime(at?: string): string {
   return t.slice(0, 5);
 }
 
-function normalize(offer: any, carriers: Record<string, string>) {
-  const itin = offer.itineraries?.[0];
+// Summarize one itinerary (leg) into flat fields.
+function legSummary(itin: any) {
   const segs = itin?.segments || [];
   const first = segs[0];
   const last = segs[segs.length - 1];
   if (!first || !last) return null;
-
-  const carrierCode = first.carrierCode;
   return {
-    id: offer.id,
-    airline: carriers[carrierCode] || carrierCode,
-    flight_number: `${carrierCode} ${first.number}`,
+    carrierCode: first.carrierCode,
+    flightNumber: `${first.carrierCode} ${first.number}`,
     from: first.departure?.iataCode || "",
     to: last.arrival?.iataCode || "",
-    fromCity: first.departure?.iataCode || "",
-    toCity: last.arrival?.iataCode || "",
     departTime: fmtTime(first.departure?.at),
     arriveTime: fmtTime(last.arrival?.at),
     date: (first.departure?.at || "").split("T")[0] || "",
     duration: fmtDuration(itin?.duration),
     stops: Math.max(0, segs.length - 1),
+  };
+}
+
+function normalize(offer: any, carriers: Record<string, string>) {
+  const out = legSummary(offer.itineraries?.[0]);
+  if (!out) return null;
+  const ret = offer.itineraries?.[1] ? legSummary(offer.itineraries[1]) : null;
+
+  return {
+    id: offer.id,
+    airline: carriers[out.carrierCode] || out.carrierCode,
+    flight_number: out.flightNumber,
+    from: out.from,
+    to: out.to,
+    fromCity: out.from,
+    toCity: out.to,
+    departTime: out.departTime,
+    arriveTime: out.arriveTime,
+    date: out.date,
+    duration: out.duration,
+    stops: out.stops,
     price: parseFloat(offer.price?.grandTotal || offer.price?.total || "0"),
     currency: offer.price?.currency || "USD",
+    // Round-trip return leg (null for one-way).
+    roundTrip: !!ret,
+    returnFlightNumber: ret ? ret.flightNumber : null,
+    returnDepartTime: ret ? ret.departTime : null,
+    returnArriveTime: ret ? ret.arriveTime : null,
+    returnDate: ret ? ret.date : null,
+    returnDuration: ret ? ret.duration : null,
+    returnStops: ret ? ret.stops : null,
   };
 }
 
@@ -117,6 +141,7 @@ Deno.serve(async (req) => {
   const origin = (body.origin || "").trim().toUpperCase();
   const destination = (body.destination || "").trim().toUpperCase();
   const date = (body.date || "").trim(); // YYYY-MM-DD
+  const returnDate = (body.returnDate || "").trim(); // optional YYYY-MM-DD
   const adults = Math.min(Math.max(parseInt(body.adults, 10) || 1, 1), 9);
   const currency = (body.currency || "USD").toUpperCase();
 
@@ -127,6 +152,12 @@ Deno.serve(async (req) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return json({ error: "invalid_date", message: "Date must be YYYY-MM-DD." }, 400);
   }
+  if (returnDate && !/^\d{4}-\d{2}-\d{2}$/.test(returnDate)) {
+    return json({ error: "invalid_return_date", message: "Return date must be YYYY-MM-DD." }, 400);
+  }
+  if (returnDate && returnDate < date) {
+    return json({ error: "return_before_depart", message: "Return date must be on or after departure." }, 400);
+  }
 
   try {
     const token = await getToken();
@@ -134,6 +165,7 @@ Deno.serve(async (req) => {
     url.searchParams.set("originLocationCode", origin);
     url.searchParams.set("destinationLocationCode", destination);
     url.searchParams.set("departureDate", date);
+    if (returnDate) url.searchParams.set("returnDate", returnDate);
     url.searchParams.set("adults", String(adults));
     url.searchParams.set("currencyCode", currency);
     url.searchParams.set("max", "12");
