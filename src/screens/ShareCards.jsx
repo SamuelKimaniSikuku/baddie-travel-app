@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { T } from "../theme";
 import { flightsService } from "../services/flights";
+import AirportInput from "../ui/AirportInput";
 
 var SHARE_OPTIONS = [
   { id:"flight", icon:"✈️", label:"Flight", color:T.sky },
@@ -209,9 +210,9 @@ export function ShareSheet({ onClose, onShare }) {
         </div>
 
         {flightMode === "search" ? <>
-          <div style={{ display:"flex", gap:6 }}>
-            <input style={{...inp,flex:1,textTransform:"uppercase"}} maxLength={3} placeholder="From (CDG)" value={sp.origin} onChange={function(e){setSp({...sp,origin:e.target.value})}} />
-            <input style={{...inp,flex:1,textTransform:"uppercase"}} maxLength={3} placeholder="To (DPS)" value={sp.destination} onChange={function(e){setSp({...sp,destination:e.target.value})}} />
+          <div style={{ display:"flex", gap:6, marginBottom:7 }}>
+            <AirportInput value={sp.origin} placeholder="From — city or airport" onSelect={function(code){ setSp({...sp,origin:code}); }} />
+            <AirportInput value={sp.destination} placeholder="To — city or airport" onSelect={function(code){ setSp({...sp,destination:code}); }} />
           </div>
           <input style={inp} type="date" value={sp.date} onChange={function(e){setSp({...sp,date:e.target.value})}} />
           <button onClick={searchFlights} disabled={searching} style={{ width:"100%", padding:"11px", borderRadius:12, border:"none",
