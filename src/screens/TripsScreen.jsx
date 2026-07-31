@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { T } from "../theme";
 import Glass from "../ui/Glass";
+import FlightSearch from "../ui/FlightSearch";
 import { useTrips } from "../hooks/useSupabase";
 import { tripsService } from "../services/trips";
 import { isDemo } from "../lib/supabase";
@@ -69,12 +70,21 @@ export default function TripsScreen({ matches, userId }) {
   var [expanded, setExpanded] = useState(null);
   var [newItem, setNewItem] = useState("");
   var [showCreate, setShowCreate] = useState(false);
+  var [tab, setTab] = useState("checklist"); // "checklist" | "flights"
 
   // Live checklist for the expanded trip.
   var [liveItems, setLiveItems] = useState([]);
   var [itemsLoading, setItemsLoading] = useState(false);
 
+  // Live flights for the expanded trip.
+  var [liveFlights, setLiveFlights] = useState([]);
+  var [flightsLoading, setFlightsLoading] = useState(false);
+  var [showFlightSearch, setShowFlightSearch] = useState(false);
+
   var trips = isDemo ? demoTrips : (tripsHook.trips || []);
+
+  // Reset to the checklist tab each time a trip is opened.
+  useEffect(function(){ setTab("checklist"); setShowFlightSearch(false); }, [expanded]);
 
   // Load real itinerary items whenever a trip is expanded in live mode.
   useEffect(function(){
@@ -88,6 +98,48 @@ export default function TripsScreen({ matches, userId }) {
     });
     return function(){ active = false; };
   }, [expanded]);
+
+  // Load saved flights whenever a trip is expanded in live mode.
+  useEffect(function(){
+    if (isDemo || !expanded) return;
+    var active = true;
+    setFlightsLoading(true);
+    tripsService.getFlights(expanded).then(function(res){
+      if (!active) return;
+      setLiveFlights(res.data || []);
+      setFlightsLoading(false);
+    });
+    return function(){ active = false; };
+  }, [expanded]);
+
+  function currentFlights(trip) {
+    if (isDemo) return trip.flights || [];
+    return liveFlights;
+  }
+
+  async function saveFlight(trip, result) {
+    setShowFlightSearch(false);
+    if (isDemo) {
+      var demoFlight = { ...result, id: "df" + Date.now() };
+      setDemoTrips(function(p){ return p.map(function(t){
+        return t.id===trip.id ? {...t, flights:(t.flights||[]).concat([demoFlight])} : t;
+      }); });
+      return;
+    }
+    var res = await tripsService.addFlight(trip.id, result, userId);
+    if (res.data) setLiveFlights(function(prev){ return prev.concat([res.data]); });
+  }
+
+  async function removeFlight(trip, flight) {
+    if (isDemo) {
+      setDemoTrips(function(p){ return p.map(function(t){
+        return t.id===trip.id ? {...t, flights:(t.flights||[]).filter(function(f){ return f.id!==flight.id; })} : t;
+      }); });
+      return;
+    }
+    setLiveFlights(function(prev){ return prev.filter(function(f){ return f.id!==flight.id; }); });
+    await tripsService.deleteFlight(flight.id);
+  }
 
   function currentItems(trip) {
     if (isDemo) return trip.items || [];
@@ -145,25 +197,44 @@ export default function TripsScreen({ matches, userId }) {
           <div style={{ fontSize:10, color:T.ash, marginTop:4 }}>{done}/{items.length} completed</div>
         </>}
       </Glass>
-      <h3 style={{ fontSize:11, color:T.ash, textTransform:"uppercase", letterSpacing:2, marginBottom:10 }}>Checklist</h3>
-      {itemsLoading && <p style={{ color:T.ash, fontSize:12, padding:"4px 2px" }}>Loading…</p>}
-      {!itemsLoading && items.length === 0 && <p style={{ color:T.ash, fontSize:12, padding:"4px 2px" }}>No tasks yet — add your first below.</p>}
-      {items.map(function(item){
-        return <div key={item.id} onClick={function(){toggleItem(trip,item)}} style={{
-          display:"flex", alignItems:"center", gap:11, padding:"11px 14px", marginBottom:6,
-          background:T.glass, border:"1px solid "+T.glassBorder, borderRadius:12, cursor:"pointer", opacity:item.completed?0.5:1 }}>
-          <div style={{ width:20, height:20, borderRadius:6, border:item.completed?"none":"2px solid "+T.ash,
-            background:item.completed?"linear-gradient(135deg,"+T.mint+","+T.lime+")":"none",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:11 }}>{item.completed?"✓":""}</div>
-          <span style={{ fontSize:13, textDecoration:item.completed?"line-through":"none", color:item.completed?T.ash:T.white }}>{item.title}</span>
-        </div>;
-      })}
-      <div style={{ display:"flex", gap:8, marginTop:10 }}>
-        <input value={newItem} onChange={function(e){setNewItem(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter")addItem(trip)}}
-          placeholder="Add a task..." style={{ flex:1, padding:"11px 14px", borderRadius:12, background:T.glass, border:"1px solid "+T.glassBorder, color:T.white, fontSize:13, outline:"none" }} />
-        <button onClick={function(){addItem(trip)}} style={{ padding:"11px 18px", borderRadius:12, border:"none",
-          background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white, fontWeight:600, cursor:"pointer", fontSize:12 }}>Add</button>
+      {/* Checklist / Flights tabs */}
+      <div style={{ display:"flex", gap:6, marginBottom:12, background:T.glass, borderRadius:10, padding:3 }}>
+        {[{id:"checklist",label:"✅ Checklist"},{id:"flights",label:"✈️ Flights"}].map(function(t){
+          var active = tab === t.id;
+          return <button key={t.id} onClick={function(){ setTab(t.id); }} style={{
+            flex:1, padding:"8px", borderRadius:8, border:"none", cursor:"pointer", fontSize:11, fontWeight:600,
+            background: active ? T.flame : "transparent", color: active ? T.white : T.mist }}>{t.label}</button>;
+        })}
       </div>
+
+      {tab === "checklist" ? <>
+        {itemsLoading && <p style={{ color:T.ash, fontSize:12, padding:"4px 2px" }}>Loading…</p>}
+        {!itemsLoading && items.length === 0 && <p style={{ color:T.ash, fontSize:12, padding:"4px 2px" }}>No tasks yet — add your first below.</p>}
+        {items.map(function(item){
+          return <div key={item.id} onClick={function(){toggleItem(trip,item)}} style={{
+            display:"flex", alignItems:"center", gap:11, padding:"11px 14px", marginBottom:6,
+            background:T.glass, border:"1px solid "+T.glassBorder, borderRadius:12, cursor:"pointer", opacity:item.completed?0.5:1 }}>
+            <div style={{ width:20, height:20, borderRadius:6, border:item.completed?"none":"2px solid "+T.ash,
+              background:item.completed?"linear-gradient(135deg,"+T.mint+","+T.lime+")":"none",
+              display:"flex", alignItems:"center", justifyContent:"center", fontSize:11 }}>{item.completed?"✓":""}</div>
+            <span style={{ fontSize:13, textDecoration:item.completed?"line-through":"none", color:item.completed?T.ash:T.white }}>{item.title}</span>
+          </div>;
+        })}
+        <div style={{ display:"flex", gap:8, marginTop:10 }}>
+          <input value={newItem} onChange={function(e){setNewItem(e.target.value)}} onKeyDown={function(e){if(e.key==="Enter")addItem(trip)}}
+            placeholder="Add a task..." style={{ flex:1, padding:"11px 14px", borderRadius:12, background:T.glass, border:"1px solid "+T.glassBorder, color:T.white, fontSize:13, outline:"none" }} />
+          <button onClick={function(){addItem(trip)}} style={{ padding:"11px 18px", borderRadius:12, border:"none",
+            background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white, fontWeight:600, cursor:"pointer", fontSize:12 }}>Add</button>
+        </div>
+      </> : <FlightsTab
+        trip={trip}
+        flights={currentFlights(trip)}
+        loading={!isDemo && flightsLoading}
+        showSearch={showFlightSearch}
+        onToggleSearch={function(){ setShowFlightSearch(function(v){ return !v; }); }}
+        onSave={function(r){ saveFlight(trip, r); }}
+        onRemove={function(f){ removeFlight(trip, f); }}
+      />}
     </div>;
   }
 
@@ -250,6 +321,53 @@ function Section({ label, trips, userId, onOpen, showCountdown }) {
       </Glass>;
     })}
   </>;
+}
+
+// ── Flights tab (saved flights + search-to-add) ──
+function FlightsTab({ trip, flights, loading, showSearch, onToggleSearch, onSave, onRemove }) {
+  if (showSearch) {
+    return <div style={{ animation:"fadeIn 0.2s" }}>
+      <button onClick={onToggleSearch} style={{ background:"none", border:"none", color:T.mist, fontSize:12, cursor:"pointer", marginBottom:10 }}>← Back to saved flights</button>
+      <FlightSearch
+        pickLabel="Add"
+        presetDestination={/^[A-Za-z]{3}$/.test((trip.destination_iata||"")) ? trip.destination_iata : ""}
+        onPick={onSave}
+      />
+    </div>;
+  }
+
+  return <div style={{ animation:"fadeIn 0.2s" }}>
+    {loading && <p style={{ color:T.ash, fontSize:12, padding:"4px 2px" }}>Loading…</p>}
+    {!loading && flights.length === 0 && <div style={{ textAlign:"center", padding:"24px 8px" }}>
+      <div style={{ fontSize:32, marginBottom:6 }}>🛫</div>
+      <p style={{ color:T.ash, fontSize:12 }}>No flights saved to this trip yet.</p>
+    </div>}
+    {flights.map(function(f){
+      return <div key={f.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"11px 13px", marginBottom:8,
+        borderRadius:14, background:T.glass, border:"1px solid "+T.glassBorder }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:12, fontWeight:700 }}>{f.airline}</span>
+            <span style={{ fontSize:9, color:T.ash }}>{f.flight_number}</span>
+            {f.roundTrip && <span style={{ fontSize:8, padding:"1px 6px", borderRadius:6, background:T.sky+"22", color:T.sky, fontWeight:600 }}>ROUND-TRIP</span>}
+          </div>
+          <div style={{ fontSize:10, color:T.mist, marginTop:3 }}>
+            ↗ {f.departTime} {f.from} → {f.arriveTime} {f.to} · {f.duration}{typeof f.stops==="number" ? " · "+(f.stops===0?"Direct":f.stops+" stop"+(f.stops>1?"s":"")) : ""}
+          </div>
+          {f.roundTrip && <div style={{ fontSize:10, color:T.mist, marginTop:1 }}>
+            ↙ {f.returnDepartTime} {f.to} → {f.returnArriveTime} {f.from} · {f.returnDuration}
+          </div>}
+          {f.date && <div style={{ fontSize:9, color:T.ash, marginTop:2 }}>{f.date}{f.roundTrip && f.returnDate ? " – " + f.returnDate : ""}</div>}
+        </div>
+        <div style={{ textAlign:"right" }}>
+          <div style={{ fontSize:13, fontWeight:700, color:T.gold }}>${f.price}</div>
+          <button onClick={function(){ onRemove(f); }} title="Remove" style={{ marginTop:4, background:"none", border:"none", color:T.rose, fontSize:14, cursor:"pointer" }}>🗑</button>
+        </div>
+      </div>;
+    })}
+    <button onClick={onToggleSearch} style={{ width:"100%", marginTop:6, padding:"12px", borderRadius:12, border:"1px dashed "+T.sky+"55",
+      background:T.sky+"10", color:T.sky, fontSize:12, fontWeight:600, cursor:"pointer" }}>＋ Search & add flight</button>
+  </div>;
 }
 
 // ── New Trip form ──

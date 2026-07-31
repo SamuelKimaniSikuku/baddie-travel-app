@@ -150,6 +150,78 @@ class TripsService {
     return { data, error };
   }
 
+  // ── Flights ──
+
+  // Map a DB row (snake_case) to the camelCase shape the UI cards use.
+  _flightFromRow(row) {
+    return {
+      id: row.id,
+      airline: row.airline,
+      flight_number: row.flight_number,
+      from: row.from_code, to: row.to_code,
+      fromCity: row.from_city, toCity: row.to_city,
+      departTime: row.depart_time, arriveTime: row.arrive_time,
+      date: row.depart_date, duration: row.duration, stops: row.stops,
+      price: row.price, currency: row.currency,
+      roundTrip: row.round_trip,
+      returnFlightNumber: row.return_flight_number,
+      returnDepartTime: row.return_depart_time,
+      returnArriveTime: row.return_arrive_time,
+      returnDate: row.return_date,
+      returnDuration: row.return_duration,
+      returnStops: row.return_stops,
+    };
+  }
+
+  // Save a flight (a search result) to a trip.
+  async addFlight(tripId, flight, addedBy) {
+    if (isDemo) return { data: { ...flight, id: 'demo-flight-' + Date.now() }, error: null };
+
+    const { data, error } = await supabase
+      .from('trip_flights')
+      .insert({
+        trip_id: tripId,
+        airline: flight.airline,
+        flight_number: flight.flight_number,
+        from_code: flight.from, to_code: flight.to,
+        from_city: flight.fromCity, to_city: flight.toCity,
+        depart_time: flight.departTime, arrive_time: flight.arriveTime,
+        depart_date: flight.date, duration: flight.duration, stops: flight.stops,
+        price: flight.price, currency: flight.currency || 'USD',
+        round_trip: !!flight.roundTrip,
+        return_flight_number: flight.returnFlightNumber || null,
+        return_depart_time: flight.returnDepartTime || null,
+        return_arrive_time: flight.returnArriveTime || null,
+        return_date: flight.returnDate || null,
+        return_duration: flight.returnDuration || null,
+        return_stops: flight.returnStops == null ? null : flight.returnStops,
+        added_by: addedBy,
+      })
+      .select()
+      .single();
+    if (error) return { data: null, error };
+    return { data: this._flightFromRow(data), error: null };
+  }
+
+  // List flights saved to a trip (soonest departure first).
+  async getFlights(tripId) {
+    if (isDemo) return { data: [], error: null };
+    const { data, error } = await supabase
+      .from('trip_flights')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('depart_date', { ascending: true });
+    if (error) return { data: [], error };
+    return { data: (data || []).map(this._flightFromRow), error: null };
+  }
+
+  // Remove a saved flight.
+  async deleteFlight(flightId) {
+    if (isDemo) return { error: null };
+    const { error } = await supabase.from('trip_flights').delete().eq('id', flightId);
+    return { error };
+  }
+
   // ── Itinerary ──
 
   // Add a day to itinerary
