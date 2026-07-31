@@ -12,7 +12,7 @@ var SHARE_OPTIONS = [
   { id:"location", icon:"📍", label:"Location", color:T.rose },
 ];
 
-export function FlightCard({ data, isMine }) {
+export function FlightCard({ data, isMine, onSave }) {
   return <div style={{ borderRadius:14, overflow:"hidden", width:250,
     background:isMine?"rgba(255,65,54,0.08)":"rgba(255,255,255,0.05)", border:"1px solid "+(isMine?T.flame+"33":T.glassBorder) }}>
     <div style={{ padding:"7px 11px", display:"flex", alignItems:"center", justifyContent:"space-between",
@@ -52,8 +52,8 @@ export function FlightCard({ data, isMine }) {
         <span>{data.returnDepartTime} → {data.returnArriveTime}</span>
       </div>}
     </div>
-    <button style={{ width:"100%", padding:7, border:"none", borderTop:"1px solid "+T.glassBorder,
-      background:"transparent", color:T.sky, fontSize:10, fontWeight:600, cursor:"pointer" }}>📌 Save to Trip</button>
+    {onSave && <button onClick={function(){ onSave(data); }} style={{ width:"100%", padding:7, border:"none", borderTop:"1px solid "+T.glassBorder,
+      background:"transparent", color:T.sky, fontSize:10, fontWeight:600, cursor:"pointer" }}>📌 Save to Trip</button>}
   </div>;
 }
 

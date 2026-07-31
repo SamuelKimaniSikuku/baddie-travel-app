@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
-import { useChat } from "../hooks/useSupabase";
+import { useChat, useTrips } from "../hooks/useSupabase";
 import { isDemo } from "../lib/supabase";
 import { REPLIES } from "../data/mock";
 import { profilesService } from "../services/profiles";
+import { tripsService } from "../services/trips";
 import VerifiedBadge from "../ui/VerifiedBadge";
 import { ShareSheet, FlightCard, PollCard, ItineraryCard, ExpenseCard, ChecklistCard } from "./ShareCards";
 
@@ -18,6 +19,10 @@ export default function ChatDetail({ match, userId, onBack }) {
   var [showShare, setShowShare] = useState(false);
   var [safetyOpen, setSafetyOpen] = useState(false);
   var [safetyDone, setSafetyDone] = useState("");
+  var tripsHook = useTrips(isDemo ? null : userId);
+  var [saveFlight, setSaveFlight] = useState(null); // flight data pending "save to trip"
+  var [saveMsg, setSaveMsg] = useState("");
+  var [savingTo, setSavingTo] = useState("");
 
   var otherUserId = match.id;
   if (!isDemo && match.match) {
@@ -75,6 +80,25 @@ export default function ChatDetail({ match, userId, onBack }) {
     }
   }
 
+  async function saveFlightToTrip(trip) {
+    setSavingTo(trip.id);
+    if (!isDemo && trip.id !== "demo-trip") {
+      await tripsService.addFlight(trip.id, saveFlight, userId);
+    }
+    setSavingTo("");
+    setSaveFlight(null);
+    setSaveMsg("Flight saved to " + trip.destination + " ✈️");
+    setTimeout(function(){ setSaveMsg(""); }, 2600);
+  }
+
+  // Trips offered in the picker. In demo (or when the user has no trips yet)
+  // fall back to a single option based on this conversation's destination.
+  function pickerTrips() {
+    var live = tripsHook.trips || [];
+    if (!isDemo && live.length) return live;
+    return [{ id:"demo-trip", destination: matchDest || "This trip", destination_emoji: matchDestEmoji }];
+  }
+
   function handleVote(optId) {
     setDemoMessages(function(prev){ return prev.map(function(m){
       if (m.type!=="poll") return m;
@@ -104,7 +128,7 @@ export default function ChatDetail({ match, userId, onBack }) {
           borderBottomRightRadius:isMine?4:16, borderBottomLeftRadius:isMine?16:4 }}>
           <p style={{ fontSize:13, lineHeight:1.5 }}>{msgContent}</p>
         </div>
-        : msgType==="flight" ? <FlightCard data={msgData} isMine={isMine} />
+        : msgType==="flight" ? <FlightCard data={msgData} isMine={isMine} onSave={function(f){ setSaveFlight(f); }} />
         : msgType==="poll" ? <PollCard data={msgData} onVote={handleVote} />
         : msgType==="itinerary" ? <ItineraryCard data={msgData} />
         : msgType==="expense" ? <ExpenseCard data={msgData} />
@@ -180,5 +204,27 @@ export default function ChatDetail({ match, userId, onBack }) {
         color:T.white, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>↑</button>
     </div>
     {showShare && <ShareSheet onClose={function(){setShowShare(false)}} onShare={handleShare} />}
+
+    {saveMsg && <div style={{ position:"fixed", bottom:78, left:0, right:0, display:"flex", justifyContent:"center", zIndex:70, pointerEvents:"none" }}>
+      <div style={{ padding:"9px 16px", borderRadius:20, background:T.mint+"22", border:"1px solid "+T.mint+"55", color:T.mint, fontSize:12, fontWeight:600, animation:"fadeInUp 0.3s ease" }}>{saveMsg}</div>
+    </div>}
+
+    {saveFlight && <div onClick={function(){ setSaveFlight(null); }} style={{ position:"fixed", inset:0, zIndex:80, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"flex-end" }}>
+      <div onClick={function(e){ e.stopPropagation(); }} style={{ width:"100%", maxWidth:480, margin:"0 auto", background:T.ink, borderRadius:"20px 20px 0 0", padding:"12px 16px 26px", animation:"slideSheet 0.3s cubic-bezier(0.34,1.56,0.64,1)", maxHeight:"70vh", overflow:"auto" }}>
+        <div style={{ width:36, height:4, borderRadius:2, background:T.slate, margin:"0 auto 14px" }} />
+        <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:17, marginBottom:4 }}>Save flight to…</h3>
+        <p style={{ fontSize:11, color:T.ash, marginBottom:12 }}>{saveFlight.airline} {saveFlight.flight_number} · {saveFlight.from} → {saveFlight.to}</p>
+        {pickerTrips().map(function(t){
+          return <button key={t.id} disabled={savingTo===t.id} onClick={function(){ saveFlightToTrip(t); }} style={{
+            width:"100%", display:"flex", alignItems:"center", gap:11, padding:"13px 14px", marginBottom:8, borderRadius:14,
+            border:"1px solid "+T.glassBorder, background:T.glass, color:T.white, cursor:"pointer", textAlign:"left" }}>
+            <span style={{ fontSize:22 }}>{t.destination_emoji || "🌍"}</span>
+            <span style={{ flex:1, fontSize:14, fontWeight:600 }}>{t.destination}</span>
+            <span style={{ color:T.sky, fontSize:12, fontWeight:600 }}>{savingTo===t.id ? "Saving…" : "Save"}</span>
+          </button>;
+        })}
+        <button onClick={function(){ setSaveFlight(null); }} style={{ width:"100%", padding:"12px", borderRadius:12, border:"1px solid "+T.glassBorder, background:"transparent", color:T.mist, fontSize:13, cursor:"pointer", marginTop:4 }}>Cancel</button>
+      </div>
+    </div>}
   </div>;
 }
