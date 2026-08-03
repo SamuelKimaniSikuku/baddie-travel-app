@@ -11,6 +11,7 @@ import TripsScreen from "./screens/TripsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import MatchOverlay from "./screens/MatchOverlay";
 import ChatDetail from "./screens/ChatDetail";
+import NotificationCenter from "./ui/NotificationCenter";
 
 // ══════════════════════════════════════════════════════════════
 // BADDIE — Fully Integrated Travel App
@@ -86,6 +87,7 @@ export default function App() {
           {matches.length>0 && <div style={{ background:T.flame+"22", borderRadius:12, padding:"3px 9px", display:"flex", alignItems:"center", gap:4 }}>
             <span style={{ fontSize:11 }}>🔥</span><span style={{ fontSize:11, color:T.coral, fontWeight:600 }}>{matches.length}</span>
           </div>}
+          <NotificationCenter userId={userId} onNavigateTrips={function(){ setScreen("trips"); }} />
           <div style={{ width:32, height:32, borderRadius:"50%", background:T.charcoal, border:"2px solid "+T.slate,
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, cursor:"pointer" }}
             onClick={function(){setScreen("profile")}}>{userAvatar}</div>
