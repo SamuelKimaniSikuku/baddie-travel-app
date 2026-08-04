@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { T } from "../theme";
 import { tripsService } from "../services/trips";
 import { isDemo } from "../lib/supabase";
+import { useNotifications } from "../components/PremiumFeatures";
 
 // ══════════════════════════════════════════════════════════════
 // NotificationCenter — a bell + dropdown of trip reminders.
@@ -98,6 +99,7 @@ var SEV_COLOR = { high: "#FF4136", medium: "#FFB830", low: "#38BDF8" };
 
 export default function NotificationCenter({ userId, onNavigateTrips }) {
   var { reminders, unreadCount, markAllRead, dismiss } = useTripReminders(userId);
+  var { permission, requestPermission } = useNotifications(userId);
   var [open, setOpen] = useState(false);
   var ref = useRef(null);
 
@@ -106,6 +108,33 @@ export default function NotificationCenter({ userId, onNavigateTrips }) {
     document.addEventListener("mousedown", onDoc);
     return function(){ document.removeEventListener("mousedown", onDoc); };
   }, []);
+
+  // Fire real browser notifications for NEW reminders once permission is
+  // granted. On the first grant we seed a baseline silently so the user
+  // isn't blasted with every existing reminder — only genuinely new ones
+  // (capped) surface afterwards.
+  useEffect(function(){
+    if (permission !== "granted" || typeof Notification === "undefined") return;
+    var notifiedKey = "baddie_reminders_notified_" + (userId || "demo");
+    var initKey = notifiedKey + "_init";
+    var notified = loadSet(notifiedKey);
+    var initialized;
+    try { initialized = localStorage.getItem(initKey); } catch (e) { initialized = "1"; }
+    if (!initialized) {
+      reminders.forEach(function(r){ notified.add(r.id); });
+      saveSet(notifiedKey, notified);
+      try { localStorage.setItem(initKey, "1"); } catch (e) {}
+      return;
+    }
+    var fresh = reminders.filter(function(r){ return !notified.has(r.id); });
+    fresh.slice(0, 3).forEach(function(r){
+      try { new Notification(r.title, { body: r.body, icon: "/favicon.svg", tag: r.id }); } catch (e) {}
+    });
+    if (fresh.length) {
+      fresh.forEach(function(r){ notified.add(r.id); });
+      saveSet(notifiedKey, notified);
+    }
+  }, [reminders, permission, userId]);
 
   function toggle() {
     var next = !open;
@@ -147,6 +176,10 @@ export default function NotificationCenter({ userId, onNavigateTrips }) {
           </div>;
         })}
       </div>
+      {permission === "default" && <button onClick={function(){ requestPermission(); }} style={{ width:"100%", padding:"11px",
+        border:"none", borderTop:"1px solid "+T.glassBorder, background:"linear-gradient(135deg,"+T.flame+"18,"+T.sunset+"18)",
+        color:T.coral, fontSize:11, fontWeight:600, cursor:"pointer" }}>🔔 Enable browser notifications</button>}
+      {permission === "granted" && <div style={{ padding:"9px", borderTop:"1px solid "+T.glassBorder, textAlign:"center", fontSize:10, color:T.mint }}>✓ Browser notifications on</div>}
     </div>}
   </div>;
 }
