@@ -1,10 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { T } from "../theme";
 import { TRAVELERS } from "../data/mock";
 import { useDiscovery } from "../hooks/useSupabase";
 import { isDemo } from "../lib/supabase";
 import { profilesService } from "../services/profiles";
-import { calcCompatibility as calcCompat } from "../lib/compatibility";
+import { calcCompatibility as calcCompat, compatibilityReasons } from "../lib/compatibility";
 import VerifiedBadge from "../ui/VerifiedBadge";
 
 export default function DiscoverScreen({ onMatch, matches, userId, userProfile }) {
@@ -13,7 +13,9 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
   var [dragging, setDragging] = useState(false);
   var [dragX, setDragX] = useState(0);
   var [exitDir, setExitDir] = useState(null);
+  var [showDetails, setShowDetails] = useState(false);
   var startX = useRef(0);
+  var moved = useRef(false);
 
   var current, hasMore;
   if (isDemo) {
@@ -27,10 +29,11 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
   var likeOp = Math.min(1, Math.max(0, dragX / 100));
   var nopeOp = Math.min(1, Math.max(0, -dragX / 100));
 
-  function onStart(x) { setDragging(true); startX.current = x; }
-  function onMove(x) { if (dragging) setDragX(x - startX.current); }
+  function onStart(x) { setDragging(true); startX.current = x; moved.current = false; }
+  function onMove(x) { if (!dragging) return; var dx = x - startX.current; if (Math.abs(dx) > 5) moved.current = true; setDragX(dx); }
   function onEnd() {
     setDragging(false);
+    if (!moved.current) { setDragX(0); setShowDetails(true); return; } // tap → details
     if (Math.abs(dragX) > 110) { swipe(dragX > 0 ? "right" : "left"); }
     else { setDragX(0); }
   }
@@ -52,6 +55,20 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
     }, 300);
   }
 
+  // Keyboard controls (web app): ← pass, → like, ↑/Enter details, Esc close.
+  useEffect(function(){
+    function onKey(e) {
+      if (!current) return;
+      if (e.key === "Escape") { setShowDetails(false); return; }
+      if (showDetails) return; // don't swipe while the details sheet is open
+      if (e.key === "ArrowLeft") { e.preventDefault(); swipe("left"); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); swipe("right"); }
+      else if (e.key === "ArrowUp" || e.key === "Enter") { e.preventDefault(); setShowDetails(true); }
+    }
+    window.addEventListener("keydown", onKey);
+    return function(){ window.removeEventListener("keydown", onKey); };
+  }, [current, showDetails]);
+
   if (!current || !hasMore) return <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
     <div style={{ fontSize:56, marginBottom:12 }}>🌍</div>
     <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:22 }}>No more travelers</h2>
@@ -68,7 +85,9 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
   var displayAvatar = current.avatar || current.avatar_url || "😎";
   var displayInterests = current.interests || [];
 
-  var compat = userProfile ? profilesService.calcCompatibility(userProfile, current) : calcCompat({vibe:"Adventurous",budget:"Mid-range",interests:["Hiking","Food","Photography"]}, current);
+  var meProfile = userProfile || {vibe:"Adventurous",budget:"Mid-range",interests:["Hiking","Food","Photography"]};
+  var compat = userProfile ? profilesService.calcCompatibility(userProfile, current) : calcCompat(meProfile, current);
+  var reasons = compatibilityReasons(meProfile, current);
 
   return <div style={{ flex:1, display:"flex", flexDirection:"column", padding:"0 16px 12px", overflow:"hidden" }}>
     <div style={{ flex:1, position:"relative", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -126,10 +145,71 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
         </div>
       </div>
     </div>
-    <div style={{ display:"flex", justifyContent:"center", gap:18, paddingBottom:4 }}>
-      <button onClick={function(){swipe("left")}} style={actionBtnStyle(T.rose)}>✕</button>
-      <button onClick={function(){swipe("right")}} style={actionBtnStyle(T.mint)}>✈</button>
+    <div style={{ display:"flex", justifyContent:"center", gap:18, paddingBottom:2 }}>
+      <button onClick={function(){swipe("left")}} title="Pass (←)" style={actionBtnStyle(T.rose)}>✕</button>
+      <button onClick={function(){setShowDetails(true)}} title="Details (↑)" style={{ ...actionBtnStyle(T.sky), width:46, height:46, fontSize:18 }}>ⓘ</button>
+      <button onClick={function(){swipe("right")}} title="Let's go (→)" style={actionBtnStyle(T.mint)}>✈</button>
     </div>
+    <p style={{ textAlign:"center", fontSize:9, color:T.ash, marginTop:6 }}>← pass · tap card for details · like →</p>
+
+    {showDetails && <div onClick={function(){setShowDetails(false)}} style={{ position:"fixed", inset:0, zIndex:70,
+      background:"rgba(0,0,0,0.62)", display:"flex", alignItems:"flex-end", justifyContent:"center", animation:"fadeIn 0.2s" }}>
+      <div onClick={function(e){e.stopPropagation()}} style={{ width:"100%", maxWidth:480, background:T.ink,
+        borderRadius:"22px 22px 0 0", padding:"12px 18px 24px", maxHeight:"82vh", overflow:"auto",
+        animation:"slideSheet 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>
+        <div style={{ width:36, height:4, borderRadius:2, background:T.slate, margin:"0 auto 14px" }} />
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+          <div style={{ width:44, height:44, borderRadius:"50%", background:T.charcoal, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22 }}>{displayAvatar}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:19 }}>{displayName}{displayAge ? ", "+displayAge : ""}</h2>
+              {current.verified && <VerifiedBadge size={15} />}
+            </div>
+            {displayCity && <p style={{ fontSize:11, color:T.ash }}>📍 {displayCity}</p>}
+          </div>
+          <div style={{ textAlign:"center", background:T.mint+"18", borderRadius:12, padding:"6px 12px" }}>
+            <div style={{ color:T.mint, fontWeight:800, fontSize:17 }}>{compat}%</div>
+            <div style={{ fontSize:8, color:T.mist }}>match</div>
+          </div>
+        </div>
+
+        {displayDest && <div style={{ display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(135deg,"+T.flame+"cc,"+T.sunset+"cc)", borderRadius:16, padding:"4px 12px", marginTop:8 }}>
+          <span>{displayDestEmoji}</span><span style={{ fontSize:12, fontWeight:600 }}>{displayDest}</span>
+          {displayDates && <span style={{ fontSize:10, opacity:0.85 }}>· {displayDates}</span>}
+        </div>}
+
+        <h3 style={{ fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, margin:"16px 0 8px" }}>Why you match</h3>
+        {reasons.map(function(r,i){
+          return <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", marginBottom:6,
+            borderRadius:12, background:T.glass, border:"1px solid "+T.glassBorder }}>
+            <span style={{ fontSize:16 }}>{r.icon}</span>
+            <span style={{ fontSize:12, color:T.cloud }}>{r.text}</span>
+          </div>;
+        })}
+
+        {displayBio && <>
+          <h3 style={{ fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, margin:"16px 0 8px" }}>About</h3>
+          <p style={{ fontSize:12.5, color:T.mist, lineHeight:1.6 }}>{displayBio}</p>
+        </>}
+
+        {displayInterests.length > 0 && <>
+          <h3 style={{ fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, margin:"16px 0 8px" }}>Interests</h3>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+            {displayInterests.map(function(it){
+              var shared = (meProfile.interests || []).indexOf(it) !== -1;
+              return <span key={it} style={{ borderRadius:12, padding:"4px 11px", fontSize:11,
+                background: shared ? T.mint+"22" : "rgba(255,255,255,0.08)", color: shared ? T.mint : T.cloud,
+                border:"1px solid "+(shared ? T.mint+"44" : "transparent") }}>{shared ? "✓ " : ""}{it}</span>;
+            })}
+          </div>
+        </>}
+
+        <div style={{ display:"flex", gap:10, marginTop:20 }}>
+          <button onClick={function(){setShowDetails(false); swipe("left");}} style={{ flex:1, padding:13, borderRadius:14, border:"1px solid "+T.rose+"44", background:T.rose+"12", color:T.rose, fontSize:13, fontWeight:600, cursor:"pointer" }}>✕ Pass</button>
+          <button onClick={function(){setShowDetails(false); swipe("right");}} style={{ flex:1, padding:13, borderRadius:14, border:"none", background:"linear-gradient(135deg,"+T.mint+","+T.lime+")", color:T.midnight, fontSize:13, fontWeight:700, cursor:"pointer" }}>✈ Let's go</button>
+        </div>
+      </div>
+    </div>}
   </div>;
 }
 

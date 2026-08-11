@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcCompatibility, datesOverlapDays } from './compatibility';
+import { calcCompatibility, datesOverlapDays, compatibilityReasons } from './compatibility';
 
 describe('datesOverlapDays', () => {
   it('returns 0 when a range is missing', () => {
@@ -62,5 +62,41 @@ describe('calcCompatibility', () => {
 
   it('never returns negative', () => {
     expect(calcCompatibility({ interests: [] }, { interests: [] })).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('compatibilityReasons', () => {
+  it('falls back to a generic reason for empty profiles', () => {
+    const r = compatibilityReasons({}, {});
+    expect(r).toHaveLength(1);
+    expect(r[0].text).toMatch(/adventure buddy/i);
+  });
+
+  it('leads with destination then dates', () => {
+    const r = compatibilityReasons(
+      { destination: 'Bali', start_date: '2026-03-10', end_date: '2026-03-20' },
+      { destination: 'bali', start_date: '2026-03-15', end_date: '2026-03-25' },
+    );
+    expect(r[0].icon).toBe('📍');
+    expect(r[1].icon).toBe('📅');
+    expect(r[1].text).toMatch(/day/);
+  });
+
+  it('lists shared interests and languages', () => {
+    const r = compatibilityReasons(
+      { interests: ['Hiking', 'Food'], languages: ['English'] },
+      { interests: ['Food', 'Art'], languages: ['English', 'Swahili'] },
+    );
+    const texts = r.map(x => x.text).join(' | ');
+    expect(texts).toMatch(/Shared interests: Food/);
+    expect(texts).toMatch(/Both speak English/);
+  });
+
+  it('omits date reason when destinations differ', () => {
+    const r = compatibilityReasons(
+      { destination: 'Bali', start_date: '2026-03-10', end_date: '2026-03-20' },
+      { destination: 'Tokyo', start_date: '2026-03-15', end_date: '2026-03-25' },
+    );
+    expect(r.some(x => x.icon === '📅')).toBe(false);
   });
 });

@@ -24,6 +24,39 @@ function sharedCount(a = [], b = []) {
   return a.filter(x => b.includes(x)).length;
 }
 
+function sharedItems(a = [], b = []) {
+  return a.filter(x => b.includes(x));
+}
+
+// Human-readable reasons two travelers are compatible, strongest first.
+// Pure and dependency-free so it can be unit tested. Returns
+// [{ icon, text }] — empty-ish profiles yield a single generic reason.
+export function compatibilityReasons(me = {}, them = {}) {
+  const reasons = [];
+
+  const sameDest = me.destination && them.destination &&
+    me.destination.trim().toLowerCase() === them.destination.trim().toLowerCase();
+  if (sameDest) {
+    reasons.push({ icon: '📍', text: `Both heading to ${them.destination}` });
+    const overlap = datesOverlapDays(me.start_date, me.end_date, them.start_date, them.end_date);
+    if (overlap > 0) {
+      reasons.push({ icon: '📅', text: `Overlapping dates — ${overlap} day${overlap === 1 ? '' : 's'} together` });
+    }
+  }
+
+  if (me.vibe && me.vibe === them.vibe) reasons.push({ icon: '✨', text: `Same vibe: ${them.vibe}` });
+  if (me.budget && me.budget === them.budget) reasons.push({ icon: '💰', text: `Similar budget: ${them.budget}` });
+
+  const interests = sharedItems(me.interests, them.interests);
+  if (interests.length) reasons.push({ icon: '🎯', text: `Shared interests: ${interests.slice(0, 4).join(', ')}` });
+
+  const langs = sharedItems(me.languages, them.languages);
+  if (langs.length) reasons.push({ icon: '🗣️', text: `Both speak ${langs.slice(0, 3).join(', ')}` });
+
+  if (!reasons.length) reasons.push({ icon: '🌍', text: 'A fresh new adventure buddy' });
+  return reasons;
+}
+
 // Compatibility score (0–99) between two traveler profiles.
 // Weighted for a *travel companion* app: going to the same place on
 // overlapping dates matters most, then vibe/budget/interests.
