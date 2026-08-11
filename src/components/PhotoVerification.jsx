@@ -34,12 +34,16 @@ function compressImage(file, maxW = 1200, quality = 0.82) {
   });
 }
 
-async function uploadToSupabase(bucket, path, file) {
+// Uploads a (compressed) image. For public buckets returns the public URL;
+// for private buckets (returnPath) returns the storage path, which the
+// admin later resolves to a short-lived signed URL.
+async function uploadToSupabase(bucket, path, file, { returnPath = false } = {}) {
   const compressed = await compressImage(file);
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(bucket)
     .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
   if (error) throw error;
+  if (returnPath) return path;
   const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path);
   return publicUrl;
 }
@@ -234,20 +238,19 @@ export function IdentityVerification({ userId, currentStatus = "unverified", onC
     setSubmitting(true);
     setError("");
     try {
-      // Upload front
+      // Documents go to a PRIVATE bucket; store their storage paths (the
+      // admin resolves signed URLs to view them).
       const frontPath = `${userId}/front_${Date.now()}.jpg`;
-      const frontUrl = await uploadToSupabase("id-documents", frontPath, frontFile);
+      const front = await uploadToSupabase("id-documents", frontPath, frontFile, { returnPath: true });
 
-      // Upload back if provided
-      let backUrl = null;
+      let back = null;
       if (backFile) {
         const backPath = `${userId}/back_${Date.now()}.jpg`;
-        backUrl = await uploadToSupabase("id-documents", backPath, backFile);
+        back = await uploadToSupabase("id-documents", backPath, backFile, { returnPath: true });
       }
 
-      // Upload selfie
       const selfiePath = `${userId}/selfie_${Date.now()}.jpg`;
-      const selfieUrl = await uploadToSupabase("id-documents", selfiePath, selfieFile);
+      const selfie = await uploadToSupabase("id-documents", selfiePath, selfieFile, { returnPath: true });
 
       // Save verification record
       const { error: dbErr } = await supabase
@@ -255,9 +258,9 @@ export function IdentityVerification({ userId, currentStatus = "unverified", onC
         .upsert({
           user_id:     userId,
           doc_type:    docType,
-          front_path:  frontUrl,
-          back_path:   backUrl,
-          selfie_path: selfieUrl,
+          front_path:  front,
+          back_path:   back,
+          selfie_path: selfie,
           status:      "pending",
           submitted_at: new Date().toISOString(),
         }, { onConflict: "user_id" });
@@ -302,6 +305,12 @@ export function IdentityVerification({ userId, currentStatus = "unverified", onC
   // Step: Intro
   if (step === "intro") return (
     <div>
+      {currentStatus === "rejected" && (
+        <div style={{ padding: "12px 14px", borderRadius: 14, background: T.rose + "14", border: `1px solid ${T.rose}44`, marginBottom: 16 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: T.rose }}>❌ Verification not approved</p>
+          <p style={{ fontSize: 11, color: T.mist, marginTop: 4, lineHeight: 1.5 }}>Your previous submission couldn't be verified. Please re-submit clear, unexpired documents below.</p>
+        </div>
+      )}
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{ fontSize: 48, marginBottom: 10 }}>🛡️</div>
         <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 700 }}>Verify Your Identity</h3>

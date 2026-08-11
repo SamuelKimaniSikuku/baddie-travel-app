@@ -148,18 +148,43 @@ function VerificationsTab({ adminId }) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("pending");
+  const [docUrls, setDocUrls] = useState({}); // { front, back, selfie } signed URLs for the selected sub
 
   useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
-    const { data } = await supabase
+    setError("");
+    // Disambiguate the embed: verifications has TWO fkeys to profiles
+    // (user_id and reviewer_id), so an unqualified profiles(...) embed is
+    // ambiguous and errors. Pin it to the submitter via the user_id fkey.
+    const { data, error: loadErr } = await supabase
       .from("verifications")
-      .select("*, profiles(name, avatar, city, email)")
+      .select("*, profiles!verifications_user_id_fkey(name, avatar, city, email)")
       .order("submitted_at", { ascending: false });
+    if (loadErr) setError("Couldn't load submissions: " + loadErr.message);
     setSubs(data || []);
     setLoading(false);
   }
+
+  // ID documents live in a private bucket and are stored as storage paths.
+  // Resolve short-lived signed URLs when a submission is expanded. Legacy
+  // rows may hold full public URLs — pass those through unchanged.
+  async function resolveDoc(val) {
+    if (!val) return null;
+    if (/^https?:\/\//i.test(val)) return val;
+    const { data } = await supabase.storage.from("id-documents").createSignedUrl(val, 600);
+    return data?.signedUrl || null;
+  }
+
+  useEffect(() => {
+    let active = true;
+    const sub = subs.find(s => s.id === selected);
+    if (!sub) { setDocUrls({}); return; }
+    Promise.all([resolveDoc(sub.front_path), resolveDoc(sub.back_path), resolveDoc(sub.selfie_path)])
+      .then(([front, back, selfie]) => { if (active) setDocUrls({ front, back, selfie }); });
+    return () => { active = false; };
+  }, [selected, subs]);
 
   // Approve = mark the submission reviewed AND flip the trust badge on the
   // profile. The profiles update only succeeds because the caller is an
@@ -225,7 +250,7 @@ function VerificationsTab({ adminId }) {
               {selected === sub.id && (
                 <div style={{ padding: "0 16px 16px", borderTop: `1px solid ${C.border}` }}>
                   <div style={{ display: "grid", gridTemplateColumns: sub.back_path ? "1fr 1fr 1fr" : "1fr 1fr", gap: 10, margin: "14px 0" }}>
-                    {[{ url: sub.front_path, label: "Front" }, sub.back_path && { url: sub.back_path, label: "Back" }, { url: sub.selfie_path, label: "Selfie" }].filter(Boolean).map(img => (
+                    {[{ url: docUrls.front, label: "Front" }, sub.back_path && { url: docUrls.back, label: "Back" }, { url: docUrls.selfie, label: "Selfie" }].filter(Boolean).map(img => (
                       <div key={img.label}>
                         <p style={{ fontSize: 10, color: C.ash, marginBottom: 6, textAlign: "center" }}>{img.label}</p>
                         <div style={{ borderRadius: 10, overflow: "hidden", background: C.slate, aspectRatio: "3/4", position: "relative" }}>
