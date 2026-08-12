@@ -160,7 +160,7 @@ function VerificationsTab({ adminId }) {
     // ambiguous and errors. Pin it to the submitter via the user_id fkey.
     const { data, error: loadErr } = await supabase
       .from("verifications")
-      .select("*, profiles!verifications_user_id_fkey(name, avatar, city, email)")
+      .select("*, profiles!verifications_user_id_fkey(name, avatar, city)")
       .order("submitted_at", { ascending: false });
     if (loadErr) setError("Couldn't load submissions: " + loadErr.message);
     setSubs(data || []);
