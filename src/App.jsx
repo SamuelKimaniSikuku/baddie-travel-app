@@ -12,6 +12,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import MatchOverlay from "./screens/MatchOverlay";
 import ChatDetail from "./screens/ChatDetail";
 import NotificationCenter from "./ui/NotificationCenter";
+import VerifyScreen from "./screens/VerifyScreen";
 
 // ══════════════════════════════════════════════════════════════
 // BADDIE — Fully Integrated Travel App
@@ -20,6 +21,7 @@ import NotificationCenter from "./ui/NotificationCenter";
 
 export default function App() {
   if (typeof window !== "undefined" && window.location.pathname === "/admin") { return <AdminDashboard />; }
+  if (typeof window !== "undefined" && window.location.pathname === "/verify") { return <VerifyScreen />; }
   var auth = useAuth();
   var [screen, setScreen] = useState("discover");
   var [demoMatches, setDemoMatches] = useState([TRAVELERS[0], TRAVELERS[2]]);

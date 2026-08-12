@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { kycService } from "../services/kyc";
 
 // ═══════════════════════════════════════════════════════════════
 // BADDIE — Photo Upload + Identity Verification Components
@@ -482,6 +483,66 @@ export function IdentityVerification({ userId, currentStatus = "unverified", onC
 }
 
 // ══════════════════════════════════════════════════════════════
+// KYC PANEL — Didit automated verification entry point.
+// Shows the current state and sends the user to the /verify flow.
+// ══════════════════════════════════════════════════════════════
+function KycPanel() {
+  const [v, setV] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    kycService.fetchVerification().then((res) => { setV(res); setLoading(false); });
+  }, []);
+
+  const go = () => { window.location.href = "/verify"; };
+  const box = { padding: "20px 16px", borderRadius: 18, textAlign: "center" };
+
+  if (loading) return <div style={{ ...box, color: T.ash }}>Loading…</div>;
+  const status = v?.status || "unverified";
+
+  if (status === "verified") return (
+    <div style={{ ...box, background: T.mint + "12", border: `1px solid ${T.mint}33` }}>
+      <div style={{ fontSize: 44, marginBottom: 8 }}>✅</div>
+      <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, color: T.mint }}>Identity Verified</h3>
+      <p style={{ color: T.ash, fontSize: 12, marginTop: 6 }}>You have the ✓ verified badge.</p>
+    </div>
+  );
+  if (status === "pending") return (
+    <div style={{ ...box, background: T.gold + "10", border: `1px solid ${T.gold}33` }}>
+      <div style={{ fontSize: 44, marginBottom: 8 }}>⏳</div>
+      <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, color: T.gold }}>In Progress</h3>
+      <p style={{ color: T.ash, fontSize: 12, marginTop: 6 }}>Your check is processing — the badge appears automatically once approved.</p>
+    </div>
+  );
+  if (status === "in_review") return (
+    <div style={{ ...box, background: T.sky + "10", border: `1px solid ${T.sky}33` }}>
+      <div style={{ fontSize: 44, marginBottom: 8 }}>🔎</div>
+      <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, color: T.sky }}>Under Review</h3>
+      <p style={{ color: T.ash, fontSize: 12, marginTop: 6 }}>A reviewer is taking a closer look. We'll update your badge automatically.</p>
+    </div>
+  );
+  const dup = status === "rejected" && v?.declineReason === "duplicate_account";
+  return (
+    <div style={{ textAlign: "center", padding: "10px 4px" }}>
+      <div style={{ fontSize: 44, marginBottom: 10 }}>🛡️</div>
+      <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700 }}>Verify Your Identity</h3>
+      <p style={{ color: T.mist, fontSize: 12, marginTop: 6, lineHeight: 1.6 }}>
+        {dup
+          ? "This identity is already verified on another account. Contact support@baddie.app if that's a mistake."
+          : status === "rejected"
+            ? "Your last check didn't pass. Make sure your document is clear and unexpired, then try again."
+            : "A quick ID scan + selfie, handled securely by our verification partner. Verified users get a ✅ badge and up to 5× more matches."}
+      </p>
+      {!dup && (
+        <button onClick={go} style={{ width: "100%", marginTop: 16, padding: 13, borderRadius: 14, border: "none", background: `linear-gradient(135deg,${T.flame},${T.sunset})`, color: T.white, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+          {status === "rejected" ? "Try again 🛂" : "Start verification 🛂"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
 // COMBINED PROFILE EDITOR (drop into ProfileScreen)
 // ══════════════════════════════════════════════════════════════
 export function ProfileMediaSection({ userId, photos, verifyStatus, onPhotosUpdate, onVerifyComplete }) {
@@ -512,13 +573,7 @@ export function ProfileMediaSection({ userId, photos, verifyStatus, onPhotosUpda
           onUpdate={onPhotosUpdate}
         />
       )}
-      {tab === "verify" && (
-        <IdentityVerification
-          userId={userId}
-          currentStatus={verifyStatus}
-          onComplete={onVerifyComplete}
-        />
-      )}
+      {tab === "verify" && <KycPanel />}
     </div>
   );
 }
