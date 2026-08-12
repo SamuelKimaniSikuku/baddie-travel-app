@@ -34,45 +34,84 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+// Canonical JSON for Didit's X-Signature-V2: recursively sorted keys, compact
+// separators, unicode preserved. JS JSON.stringify already emits compact,
+// unicode-preserving output and normalizes whole-valued floats (1.0 -> 1) via
+// parse, so we only need to sort keys.
+function sortKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(sortKeys);
+  if (v && typeof v === "object") {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(v as Record<string, unknown>).sort()) {
+      out[k] = sortKeys((v as Record<string, unknown>)[k]);
+    }
+    return out;
+  }
+  return v;
+}
+
+// Didit statuses are title-case ("In Review", "Kyc Expired"); normalize to be
+// safe against case differences across webhook versions.
 const STATUS_MAP: Record<string, "verified" | "rejected" | "in_review"> = {
-  Approved: "verified",
-  Declined: "rejected",
-  Expired: "rejected",
-  "Kyc Expired": "rejected",
-  Abandoned: "rejected",
-  "In Review": "in_review",
+  "approved": "verified",
+  "declined": "rejected",
+  "expired": "rejected",
+  "kyc expired": "rejected",
+  "abandoned": "rejected",
+  "in review": "in_review",
 };
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   const raw = await req.text();
-  const signature = req.headers.get("x-signature");
+  const secret = Deno.env.get("DIDIT_WEBHOOK_SECRET")!;
+  const sigV2 = req.headers.get("x-signature-v2");
+  const sigRaw = req.headers.get("x-signature");
   const timestamp = req.headers.get("x-timestamp");
-  if (!signature || !timestamp) return new Response("Missing signature", { status: 401 });
+
+  if ((!sigV2 && !sigRaw) || !timestamp) {
+    return new Response("Missing signature", { status: 401 });
+  }
   if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) {
     return new Response("Stale timestamp", { status: 401 });
   }
-  const expected = await hmacHex(Deno.env.get("DIDIT_WEBHOOK_SECRET")!, raw);
-  if (!timingSafeEqual(expected, signature)) {
-    return new Response("Invalid signature", { status: 401 });
+
+  // Prefer X-Signature-V2 (canonical JSON), fall back to raw-body X-Signature.
+  let valid = false;
+  if (sigV2) {
+    try {
+      const canonical = JSON.stringify(sortKeys(JSON.parse(raw)));
+      valid = timingSafeEqual(await hmacHex(secret, canonical), sigV2);
+    } catch { /* fall through */ }
   }
+  if (!valid && sigRaw) {
+    valid = timingSafeEqual(await hmacHex(secret, raw), sigRaw);
+  }
+  if (!valid) return new Response("Invalid signature", { status: 401 });
 
-  let body: { webhook_type?: string; session_id?: string; status?: string; vendor_data?: string };
-  try { body = JSON.parse(raw); } catch { return new Response("Bad payload", { status: 400 }); }
+  // Parse defensively: fields may be top-level (v3 identity) or nested under
+  // `data`, and the type key may be `webhook_type` or `event`.
+  let parsed: Record<string, any>;
+  try { parsed = JSON.parse(raw); } catch { return new Response("Bad payload", { status: 400 }); }
+  const data = (parsed.data && typeof parsed.data === "object") ? parsed.data : parsed;
+  const eventType = parsed.webhook_type ?? parsed.event;
+  const sessionId = data.session_id ?? parsed.session_id;
+  const statusStr = data.status ?? parsed.status;
 
-  if (body.webhook_type !== "status.updated" || !body.session_id) {
+  if (eventType !== "status.updated" || !sessionId) {
     return new Response(JSON.stringify({ ok: true, ignored: true }), {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   }
 
-  const newStatus = STATUS_MAP[body.status ?? ""];
+  const newStatus = STATUS_MAP[String(statusStr ?? "").toLowerCase()];
   if (!newStatus) {
-    return new Response(JSON.stringify({ ok: true, interim: body.status }), {
+    return new Response(JSON.stringify({ ok: true, interim: statusStr }), {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   }
+  const body = { session_id: sessionId };
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
