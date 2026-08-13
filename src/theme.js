@@ -42,12 +42,24 @@ button{transition:transform .12s ease, filter .15s ease;}
 button:not(:disabled):hover{filter:brightness(1.08);}
 button:not(:disabled):active{transform:scale(0.97);}
 input:focus,textarea:focus{border-color:${T.flame}66 !important;}
-/* App column: full-bleed on phones, a roomy framed app on larger screens. */
-.app-shell{width:100%;max-width:600px;margin:0 auto;}
-@media (min-width:640px){
+/* App frame: full-bleed single column on phones; sidebar + wide content on desktop. */
+.app-frame{width:100%;max-width:600px;margin:0 auto;height:100vh;display:flex;flex-direction:column;}
+.app-column{flex:1;min-width:0;min-height:0;overflow:hidden;}
+.app-sidebar{display:none;}
+@media (min-width:640px) and (max-width:959px){
   body{background:radial-gradient(ellipse at 50% -10%, ${T.flame}12, transparent 55%), #05050c;}
-  .app-shell{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.65);}
+  .app-frame{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.65);}
 }
+@media (min-width:960px){
+  body{background:radial-gradient(ellipse at 50% -10%, ${T.flame}12, transparent 55%), #05050c;}
+  .app-frame{flex-direction:row;max-width:1080px;border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 140px rgba(0,0,0,0.7);}
+  .app-sidebar{display:flex;flex-direction:column;width:230px;flex-shrink:0;padding:20px 12px 14px;border-right:1px solid ${T.glassBorder};height:100vh;box-sizing:border-box;}
+  .app-column{height:100vh;}
+  .app-topbar{display:none !important;}
+  .app-bottomnav{display:none !important;}
+}
+/* Keep the legacy .app-shell class working if referenced elsewhere. */
+.app-shell{width:100%;max-width:600px;margin:0 auto;}
 /* Full-screen overlays (Edit Profile, Chat) center their panel instead of stretching. */
 .app-overlay{position:fixed;inset:0;display:flex;justify-content:center;}
 .app-overlay > .app-panel{width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;overflow:hidden;}
