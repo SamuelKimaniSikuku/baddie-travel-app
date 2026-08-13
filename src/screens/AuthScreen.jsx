@@ -124,6 +124,15 @@ export default function AuthScreen({ onLogin }) {
           {isSignupMode?"Sign in":"Create account"}
         </span>
       </p>
+      {isSignupMode && <p style={{ textAlign:"center", marginTop:14, fontSize:10.5, color:T.ash, lineHeight:1.5 }}>
+        By creating an account you confirm you're 18+ and agree to our{" "}
+        <a href="/terms" style={{ color:T.mist }}>Terms</a> and <a href="/privacy" style={{ color:T.mist }}>Privacy Policy</a>.
+      </p>}
+      <div style={{ textAlign:"center", marginTop:isSignupMode?14:22, fontSize:11 }}>
+        <a href="/privacy" style={{ color:T.slate, textDecoration:"none" }}>Privacy</a>
+        <span style={{ color:T.slate, margin:"0 8px" }}>·</span>
+        <a href="/terms" style={{ color:T.slate, textDecoration:"none" }}>Terms</a>
+      </div>
     </div>
   </div>;
 }

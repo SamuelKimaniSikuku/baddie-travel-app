@@ -42,17 +42,25 @@ button{transition:transform .12s ease, filter .15s ease;}
 button:not(:disabled):hover{filter:brightness(1.08);}
 button:not(:disabled):active{transform:scale(0.97);}
 input:focus,textarea:focus{border-color:${T.flame}66 !important;}
-/* App column: full-bleed on phones, a framed centered app on larger screens. */
-.app-shell{width:100%;max-width:480px;margin:0 auto;}
-@media (min-width:520px){
+/* App column: full-bleed on phones, a roomy framed app on larger screens. */
+.app-shell{width:100%;max-width:600px;margin:0 auto;}
+@media (min-width:640px){
   body{background:radial-gradient(ellipse at 50% -10%, ${T.flame}12, transparent 55%), #05050c;}
   .app-shell{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.65);}
-  .app-overlay{padding:0;}
 }
 /* Full-screen overlays (Edit Profile, Chat) center their panel instead of stretching. */
 .app-overlay{position:fixed;inset:0;display:flex;justify-content:center;}
-.app-overlay > .app-panel{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;overflow:hidden;}
-@media (min-width:520px){
+.app-overlay > .app-panel{width:100%;max-width:600px;height:100%;display:flex;flex-direction:column;overflow:hidden;}
+@media (min-width:640px){
   .app-overlay > .app-panel{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.7);}
 }
+/* Readable legal / document pages. */
+.doc-page{min-height:100vh;padding:32px 20px 64px;}
+.doc-inner{max-width:720px;margin:0 auto;}
+.doc-inner h1{font-family:'Fraunces',serif;font-size:30px;margin-bottom:6px;}
+.doc-inner h2{font-family:'Fraunces',serif;font-size:19px;margin:26px 0 8px;color:${T.coral};}
+.doc-inner p,.doc-inner li{color:${T.mist};font-size:14px;line-height:1.7;}
+.doc-inner ul{margin:6px 0 6px 18px;}
+.doc-inner li{margin-bottom:4px;}
+.doc-inner a{color:${T.coral};}
 `;
