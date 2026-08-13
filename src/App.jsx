@@ -80,7 +80,7 @@ export default function App() {
 
   return <>
     <style>{css}</style>
-    <div style={{ height:"100vh", display:"flex", flexDirection:"column", maxWidth:480, margin:"0 auto",
+    <div className="app-shell" style={{ height:"100vh", display:"flex", flexDirection:"column",
       background:"radial-gradient(ellipse at 20% 0%, "+T.flame+"08 0%, transparent 40%), "+T.midnight }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 18px 10px" }}>
         <h1 style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:900,

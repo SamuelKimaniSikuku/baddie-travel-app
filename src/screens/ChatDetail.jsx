@@ -147,7 +147,8 @@ export default function ChatDetail({ match, userId, onBack }) {
   var matchDestEmoji = match.destEmoji || match.destination_emoji || "🌍";
   var matchDates = match.dates || match.date_display || "";
 
-  return <div style={{ position:"fixed", inset:0, zIndex:50, background:T.midnight, display:"flex", flexDirection:"column", animation:"slideInR 0.25s ease" }}>
+  return <div className="app-overlay" style={{ zIndex:50, background:T.midnight }}>
+   <div className="app-panel" style={{ background:T.midnight, animation:"slideInR 0.25s ease" }}>
     <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 14px 10px",
       borderBottom:"1px solid "+T.glass, background:"linear-gradient(to bottom,"+T.ink+","+T.midnight+")" }}>
       <button onClick={onBack} style={{ background:"none", border:"none", color:T.white, fontSize:20, cursor:"pointer" }}>←</button>
@@ -226,5 +227,6 @@ export default function ChatDetail({ match, userId, onBack }) {
         <button onClick={function(){ setSaveFlight(null); }} style={{ width:"100%", padding:"12px", borderRadius:12, border:"1px solid "+T.glassBorder, background:"transparent", color:T.mist, fontSize:13, cursor:"pointer", marginTop:4 }}>Cancel</button>
       </div>
     </div>}
+   </div>
   </div>;
 }

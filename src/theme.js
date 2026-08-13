@@ -38,4 +38,21 @@ body{font-family:'Sora',sans-serif;background:${T.midnight};color:${T.white};}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes gradShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 input,textarea,button,select{font-family:'Sora',sans-serif;}
+button{transition:transform .12s ease, filter .15s ease;}
+button:not(:disabled):hover{filter:brightness(1.08);}
+button:not(:disabled):active{transform:scale(0.97);}
+input:focus,textarea:focus{border-color:${T.flame}66 !important;}
+/* App column: full-bleed on phones, a framed centered app on larger screens. */
+.app-shell{width:100%;max-width:480px;margin:0 auto;}
+@media (min-width:520px){
+  body{background:radial-gradient(ellipse at 50% -10%, ${T.flame}12, transparent 55%), #05050c;}
+  .app-shell{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.65);}
+  .app-overlay{padding:0;}
+}
+/* Full-screen overlays (Edit Profile, Chat) center their panel instead of stretching. */
+.app-overlay{position:fixed;inset:0;display:flex;justify-content:center;}
+.app-overlay > .app-panel{width:100%;max-width:480px;height:100%;display:flex;flex-direction:column;overflow:hidden;}
+@media (min-width:520px){
+  .app-overlay > .app-panel{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.7);}
+}
 `;

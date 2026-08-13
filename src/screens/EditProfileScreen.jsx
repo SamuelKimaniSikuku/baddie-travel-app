@@ -35,10 +35,11 @@ export default function EditProfileScreen({ userProfile, onSave, onBack }) {
     background:T.glass, color:T.white, fontSize:13, outline:"none", marginBottom:10 };
   var labelSt = { fontSize:10, color:T.ash, textTransform:"uppercase", letterSpacing:2, marginBottom:7, display:"block" };
 
-  return <div style={{ position:"fixed", inset:0, zIndex:60, background:T.midnight, display:"flex", flexDirection:"column", animation:"slideInR 0.25s ease" }}>
+  return <div className="app-overlay" style={{ zIndex:60, background:T.midnight, animation:"fadeIn 0.2s ease" }}>
+   <div className="app-panel" style={{ background:T.midnight, animation:"slideInR 0.25s ease" }}>
     {/* Header */}
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 10px",
-      borderBottom:"1px solid "+T.glass }}>
+      borderBottom:"1px solid "+T.glass, flexShrink:0 }}>
       <button onClick={function(){ onBack(null); }} style={{ background:"none", border:"none", color:T.mist, fontSize:20, cursor:"pointer" }}>←</button>
       <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:18, fontWeight:700 }}>Edit Profile</h2>
       <button onClick={save} style={{ padding:"7px 18px", borderRadius:20, border:"none",
@@ -130,5 +131,6 @@ export default function EditProfileScreen({ userProfile, onSave, onBack }) {
         {saved ? "✓ Profile Saved!" : "Save Profile ✈️"}
       </button>
     </div>
+   </div>
   </div>;
 }
