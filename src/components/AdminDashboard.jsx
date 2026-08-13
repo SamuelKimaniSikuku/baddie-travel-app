@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { kycService } from "../services/kyc";
 
 // ═══════════════════════════════════════════════════════════════
 // BADDIE — Admin Dashboard
@@ -400,6 +401,97 @@ function ReportsTab() {
 }
 
 // ── Main Admin Dashboard ──────────────────────────────────────
+// ── KYC Review Tab (Didit in-review queue) ────────────────────
+function KycReviewTab() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState("");
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    const { items, error } = await kycService.fetchReviewQueue();
+    if (error) setError(error.message);
+    setItems(items || []);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function decide(id, decision) {
+    setBusy(id);
+    setError("");
+    const res = await kycService.decide(id, decision, note);
+    setBusy("");
+    if (!res.ok) { setError(res.error?.message || "Decision failed"); return; }
+    setNote("");
+    load();
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Identity review queue</h2>
+          <p style={{ fontSize: 11, color: C.ash, margin: "4px 0 0" }}>Didit sessions its automatic checks couldn't settle. Approving flips the verified badge.</p>
+        </div>
+        <button onClick={load} style={{ padding: "7px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: "transparent", color: C.mist, fontSize: 11, cursor: "pointer" }}>🔄 Refresh</button>
+      </div>
+
+      {error && (
+        <div style={{ padding: "10px 12px", borderRadius: 10, background: C.rose + "18", border: `1px solid ${C.rose}44`, marginBottom: 12 }}>
+          <p style={{ fontSize: 11, color: C.rose }}>⚠️ {error}</p>
+        </div>
+      )}
+
+      {loading ? <div style={{ textAlign: "center", padding: 40, color: C.ash }}>Loading…</div>
+        : items.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 48, color: C.ash }}>
+            <div style={{ fontSize: 34, marginBottom: 8 }}>✅</div>
+            <p style={{ fontSize: 13 }}>Nothing waiting on review.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {items.map(it => (
+              <div key={it.id} style={{ borderRadius: 14, background: C.card, border: `1px solid ${C.border}`, padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{it.name}</span>
+                  {it.alreadyVerified && <Badge text="already verified" color={C.gold} />}
+                  <span style={{ fontSize: 11, color: C.ash }}>{(it.idType || "").replace(/_/g, " ")}</span>
+                  <span style={{ fontSize: 11, color: C.ash, marginLeft: "auto" }}>
+                    {it.submittedAt ? new Date(it.submittedAt).toLocaleString() : ""}
+                  </span>
+                </div>
+                {it.memberSince && <p style={{ fontSize: 10, color: C.ash, marginBottom: 8 }}>Member since {new Date(it.memberSince).toLocaleDateString()}</p>}
+                {it.warnings && it.warnings.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: 10, color: C.ash, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Didit flagged</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {it.warnings.map((w, i) => (
+                        <div key={i} style={{ fontSize: 11, color: C.gold, background: C.gold + "12", borderRadius: 8, padding: "5px 9px" }}>⚠ {w}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Optional note…"
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg, color: C.white, fontSize: 12, outline: "none", resize: "none", minHeight: 44, marginBottom: 10, boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={() => decide(it.id, "approve")} disabled={busy === it.id} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${C.mint},${C.lime})`, color: "#0A0A14", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: busy === it.id ? 0.6 : 1 }}>
+                    {busy === it.id ? "…" : "✅ Approve"}
+                  </button>
+                  <button onClick={() => decide(it.id, "decline")} disabled={busy === it.id} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${C.rose}44`, background: C.rose + "18", color: C.rose, fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: busy === it.id ? 0.6 : 1 }}>
+                    ❌ Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -444,6 +536,7 @@ export default function AdminDashboard() {
   const TABS = [
     { id: "analytics", label: "📊 Analytics" },
     { id: "users",     label: "👥 Users" },
+    { id: "kyc",       label: "🪪 KYC Review" },
     { id: "verify",    label: "🛡️ Verifications" },
     { id: "reports",   label: "🚩 Reports" },
   ];
@@ -510,6 +603,7 @@ export default function AdminDashboard() {
         {/* Tab content */}
         {tab === "analytics"  && <AnalyticsTab stats={stats} />}
         {tab === "users"      && <UsersTab />}
+        {tab === "kyc"        && <KycReviewTab />}
         {tab === "verify"     && <VerificationsTab adminId={user.id} />}
         {tab === "reports"    && <ReportsTab />}
       </div>

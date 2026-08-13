@@ -105,7 +105,9 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
         onTouchEnd={onEnd}
         style={{
           position:"absolute", width:"100%", maxWidth:360, aspectRatio:"3/4.2",
-          borderRadius:22, overflow:"hidden", cursor:dragging?"grabbing":"grab",
+          borderRadius:24, overflow:"hidden", cursor:dragging?"grabbing":"grab",
+          border:"1px solid "+T.glassBorder,
+          boxShadow:"0 30px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)",
           transform: exitDir ? "translateX("+(exitDir==="right"?500:-500)+"px) rotate("+(exitDir==="right"?25:-25)+"deg)"
             : "translateX("+dragX+"px) rotate("+(dragX*0.07)+"deg)",
           transition: dragging ? "none" : "all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
@@ -214,6 +216,8 @@ export default function DiscoverScreen({ onMatch, matches, userId, userProfile }
 }
 
 function actionBtnStyle(color) {
-  return { width:56, height:56, borderRadius:"50%", border:"2px solid "+color+"44", background:color+"15",
-    color:color, cursor:"pointer", fontSize:22, display:"flex", alignItems:"center", justifyContent:"center" };
+  return { width:58, height:58, borderRadius:"50%", border:"1.5px solid "+color+"55",
+    background:"radial-gradient(circle at 50% 35%, "+color+"22, "+color+"10)",
+    color:color, cursor:"pointer", fontSize:23, display:"flex", alignItems:"center", justifyContent:"center",
+    boxShadow:"0 8px 24px "+color+"33", backdropFilter:"blur(6px)" };
 }

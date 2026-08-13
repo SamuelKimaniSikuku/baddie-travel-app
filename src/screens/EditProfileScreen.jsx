@@ -65,62 +65,65 @@ export default function EditProfileScreen({ userProfile, onSave, onBack }) {
         </div>
       </div>
 
-      {/* Basic info */}
-      <span style={labelSt}>Your name</span>
-      <input value={name} onChange={function(e){setName(e.target.value)}} placeholder="Your name" style={inputSt} />
+      <div className="edit-grid">
+       {/* Left column — the basics */}
+       <div>
+        <span style={labelSt}>Your name</span>
+        <input value={name} onChange={function(e){setName(e.target.value)}} placeholder="Your name" style={inputSt} />
 
-      <span style={labelSt}>Your city</span>
-      <input value={city} onChange={function(e){setCity(e.target.value)}} placeholder="Where are you based?" style={inputSt} />
+        <span style={labelSt}>Your city</span>
+        <input value={city} onChange={function(e){setCity(e.target.value)}} placeholder="Where are you based?" style={inputSt} />
 
-      <span style={labelSt}>Bio</span>
-      <textarea value={bio} onChange={function(e){setBio(e.target.value)}} placeholder="Tell other travelers about yourself..."
-        rows={3} style={{...inputSt, resize:"none", lineHeight:1.5}} />
+        <span style={labelSt}>Bio</span>
+        <textarea value={bio} onChange={function(e){setBio(e.target.value)}} placeholder="Tell other travelers about yourself..."
+          rows={3} style={{...inputSt, resize:"none", lineHeight:1.5}} />
 
-      {/* Next destination */}
-      <span style={labelSt}>Next destination</span>
-      <input value={destination} onChange={function(e){setDestination(e.target.value)}} placeholder="e.g. Bali, Tokyo, Morocco" style={inputSt} />
+        <span style={labelSt}>Next destination</span>
+        <input value={destination} onChange={function(e){setDestination(e.target.value)}} placeholder="e.g. Bali, Tokyo, Morocco" style={inputSt} />
 
-      <span style={labelSt}>Travel dates</span>
-      <input value={dates} onChange={function(e){setDates(e.target.value)}} placeholder="e.g. Mar 15 – Apr 2" style={inputSt} />
+        <span style={labelSt}>Travel dates</span>
+        <input value={dates} onChange={function(e){setDates(e.target.value)}} placeholder="e.g. Mar 15 – Apr 2" style={inputSt} />
+       </div>
 
-      {/* Travel vibe */}
-      <span style={labelSt}>Travel vibe</span>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:16 }}>
-        {VIBES.map(function(v){
-          return <button key={v} onClick={function(){ setVibe(v); }} style={{
-            padding:"7px 14px", borderRadius:20, cursor:"pointer", fontSize:12, fontWeight:500,
-            background: vibe===v ? "linear-gradient(135deg,"+T.flame+","+T.sunset+")" : T.glass,
-            color: vibe===v ? T.white : T.mist,
-            border: vibe===v ? "none" : "1px solid "+T.glassBorder,
-            transition:"all 0.15s" }}>{v}</button>;
-        })}
-      </div>
+       {/* Right column — preferences */}
+       <div>
+        <span style={labelSt}>Travel vibe</span>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:16 }}>
+          {VIBES.map(function(v){
+            return <button key={v} onClick={function(){ setVibe(v); }} style={{
+              padding:"7px 14px", borderRadius:20, cursor:"pointer", fontSize:12, fontWeight:500,
+              background: vibe===v ? "linear-gradient(135deg,"+T.flame+","+T.sunset+")" : T.glass,
+              color: vibe===v ? T.white : T.mist,
+              border: vibe===v ? "none" : "1px solid "+T.glassBorder,
+              transition:"all 0.15s" }}>{v}</button>;
+          })}
+        </div>
 
-      {/* Budget */}
-      <span style={labelSt}>Budget</span>
-      <div style={{ display:"flex", gap:7, marginBottom:16 }}>
-        {BUDGETS.map(function(b){
-          return <button key={b} onClick={function(){ setBudget(b); }} style={{
-            flex:1, padding:"9px 4px", borderRadius:12, cursor:"pointer", fontSize:11, fontWeight:500,
-            background: budget===b ? "linear-gradient(135deg,"+T.gold+"cc,"+T.sunset+"cc)" : T.glass,
-            color: budget===b ? T.midnight : T.mist,
-            border: budget===b ? "none" : "1px solid "+T.glassBorder,
-            transition:"all 0.15s" }}>{b}</button>;
-        })}
-      </div>
+        <span style={labelSt}>Budget</span>
+        <div style={{ display:"flex", gap:7, marginBottom:16, flexWrap:"wrap" }}>
+          {BUDGETS.map(function(b){
+            return <button key={b} onClick={function(){ setBudget(b); }} style={{
+              flex:"1 1 40%", padding:"9px 4px", borderRadius:12, cursor:"pointer", fontSize:11, fontWeight:500,
+              background: budget===b ? "linear-gradient(135deg,"+T.gold+"cc,"+T.sunset+"cc)" : T.glass,
+              color: budget===b ? T.midnight : T.mist,
+              border: budget===b ? "none" : "1px solid "+T.glassBorder,
+              transition:"all 0.15s" }}>{b}</button>;
+          })}
+        </div>
 
-      {/* Interests */}
-      <span style={labelSt}>Interests ({interests.length} selected)</span>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:16 }}>
-        {ALL_INTERESTS.map(function(interest){
-          var on = interests.includes(interest);
-          return <button key={interest} onClick={function(){ toggleInterest(interest); }} style={{
-            padding:"6px 13px", borderRadius:20, cursor:"pointer", fontSize:11, fontWeight:500,
-            background: on ? T.electric+"33" : T.glass,
-            color: on ? T.violet : T.mist,
-            border: on ? "1px solid "+T.violet+"66" : "1px solid "+T.glassBorder,
-            transition:"all 0.15s" }}>{interest}</button>;
-        })}
+        <span style={labelSt}>Interests ({interests.length} selected)</span>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:16 }}>
+          {ALL_INTERESTS.map(function(interest){
+            var on = interests.includes(interest);
+            return <button key={interest} onClick={function(){ toggleInterest(interest); }} style={{
+              padding:"6px 13px", borderRadius:20, cursor:"pointer", fontSize:11, fontWeight:500,
+              background: on ? T.electric+"33" : T.glass,
+              color: on ? T.violet : T.mist,
+              border: on ? "1px solid "+T.violet+"66" : "1px solid "+T.glassBorder,
+              transition:"all 0.15s" }}>{interest}</button>;
+          })}
+        </div>
+       </div>
       </div>
 
       {/* Save button */}

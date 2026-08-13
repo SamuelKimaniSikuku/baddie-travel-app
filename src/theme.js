@@ -54,6 +54,11 @@ input:focus,textarea:focus{border-color:${T.flame}66 !important;}
 @media (min-width:640px){
   .app-overlay > .app-panel{border-left:1px solid ${T.glassBorder};border-right:1px solid ${T.glassBorder};box-shadow:0 0 120px rgba(0,0,0,0.7);}
 }
+/* Edit Profile: single column on phones, two columns on wider screens. */
+.edit-grid{display:flex;flex-direction:column;}
+@media (min-width:600px){
+  .edit-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;align-items:start;}
+}
 /* Readable legal / document pages. */
 .doc-page{min-height:100vh;padding:32px 20px 64px;}
 .doc-inner{max-width:720px;margin:0 auto;}
