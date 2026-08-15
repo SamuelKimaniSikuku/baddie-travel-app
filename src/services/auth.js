@@ -21,6 +21,9 @@ class AuthService {
       password,
       options: {
         data: { name, avatar: avatar || '😎' },
+        // Point the confirmation link back to wherever the user signed up
+        // (baddies.travel in prod) instead of relying on the Site URL.
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
       },
     });
     return { user: data?.user, session: data?.session, error };
