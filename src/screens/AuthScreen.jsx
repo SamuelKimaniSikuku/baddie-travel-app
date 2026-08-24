@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { T } from "../theme";
 import { isDemo } from "../lib/supabase";
 import { authService } from "../services/auth";
+import { nameIssue, emailIssue } from "../lib/moderation";
 
 export default function AuthScreen({ onLogin }) {
   var [mode, setMode] = useState("splash");
@@ -15,6 +16,12 @@ export default function AuthScreen({ onLogin }) {
   useEffect(function() { var t = setTimeout(function(){ setMode("login"); }, 2200); return function(){ clearTimeout(t); }; }, []);
 
   async function submit() {
+    if (mode === "signup") {
+      var nErr = nameIssue(name);
+      if (nErr) { setError(nErr); return; }
+      var eErr = emailIssue(email);
+      if (eErr) { setError(eErr); return; }
+    }
     setLoading(true);
     setError("");
     try {

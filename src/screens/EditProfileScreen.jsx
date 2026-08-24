@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { T } from "../theme";
+import { nameIssue } from "../lib/moderation";
 
 var AVATARS = ["😎","🧕","👨🏾","👩🏻","👨🏽","👩🏽","🧑🏻","👩🏾","🧔","👱","🧑‍🦱","🧑‍🦰","🏄","🧗","🤿","🧘"];
 var VIBES = ["Adventurous","Cultural","Creative","Extreme","Social","Relaxed","Spontaneous","Luxury"];
@@ -17,6 +18,7 @@ export default function EditProfileScreen({ userProfile, onSave, onBack }) {
   var [destination, setDestination] = useState(userProfile?.destination || "");
   var [dates, setDates] = useState(userProfile?.dates || "");
   var [saved, setSaved] = useState(false);
+  var [nameErr, setNameErr] = useState("");
 
   function toggleInterest(interest) {
     setInterests(function(prev) {
@@ -25,6 +27,9 @@ export default function EditProfileScreen({ userProfile, onSave, onBack }) {
   }
 
   function save() {
+    var issue = nameIssue(name);
+    if (issue) { setNameErr(issue); return; }
+    setNameErr("");
     var updated = { name, bio, city, avatar, vibe, budget, interests, destination, dates };
     onSave(updated);
     setSaved(true);
@@ -69,7 +74,9 @@ export default function EditProfileScreen({ userProfile, onSave, onBack }) {
        {/* Left column — the basics */}
        <div>
         <span style={labelSt}>Your name</span>
-        <input value={name} onChange={function(e){setName(e.target.value)}} placeholder="Your name" style={inputSt} />
+        <input value={name} onChange={function(e){setName(e.target.value); if(nameErr) setNameErr("");}} placeholder="Your name"
+          style={{...inputSt, borderColor: nameErr ? T.rose : T.glassBorder}} />
+        {nameErr && <p style={{ color:T.rose, fontSize:11, marginTop:-4, marginBottom:10 }}>⚠️ {nameErr}</p>}
 
         <span style={labelSt}>Your city</span>
         <input value={city} onChange={function(e){setCity(e.target.value)}} placeholder="Where are you based?" style={inputSt} />
