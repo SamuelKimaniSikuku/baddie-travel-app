@@ -14,6 +14,7 @@ import ChatDetail from "./screens/ChatDetail";
 import NotificationCenter from "./ui/NotificationCenter";
 import VerifyScreen from "./screens/VerifyScreen";
 import LegalScreen from "./screens/LegalScreen";
+import LandingScreen from "./screens/LandingScreen";
 
 // ══════════════════════════════════════════════════════════════
 // BADDIE — Fully Integrated Travel App
@@ -70,7 +71,13 @@ export default function App() {
     </div>
   </>;
 
-  if (!isAuthed) return <><style>{css}</style><AuthScreen onLogin={handleLogin} /></>;
+  if (!isAuthed) {
+    // Logged-out visitors: marketing landing at "/", auth screen at /login.
+    if (typeof window !== "undefined" && window.location.pathname === "/login") {
+      return <><style>{css}</style><AuthScreen onLogin={handleLogin} /></>;
+    }
+    return <><style>{css}</style><LandingScreen /></>;
+  }
 
   var userAvatar = userProfile?.avatar || "😎";
 

@@ -71,8 +71,22 @@ input:focus,textarea:focus{border-color:${T.flame}66 !important;}
 @media (min-width:600px){
   .edit-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;align-items:start;}
 }
-/* Readable legal / document pages. */
-.doc-page{min-height:100vh;padding:32px 20px 64px;}
+/* Landing page. */
+.landing-hero{display:flex;gap:56px;align-items:center;justify-content:space-between;}
+.landing-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.landing-stats{display:flex;gap:72px;justify-content:center;flex-wrap:wrap;}
+@media (max-width:980px){
+  .landing-hero{flex-direction:column;gap:40px;text-align:center;}
+  .landing-hero h1{font-size:44px !important;}
+  .landing-cards{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width:560px){
+  .landing-cards{grid-template-columns:1fr;}
+  .landing-hero h1{font-size:36px !important;}
+  .landing-stats{gap:36px;}
+}
+/* Readable legal / document pages (own scroll container: body is overflow:hidden). */
+.doc-page{height:100vh;overflow-y:auto;box-sizing:border-box;padding:32px 20px 64px;}
 .doc-inner{max-width:720px;margin:0 auto;}
 .doc-inner h1{font-family:'Fraunces',serif;font-size:30px;margin-bottom:6px;}
 .doc-inner h2{font-family:'Fraunces',serif;font-size:19px;margin:26px 0 8px;color:${T.coral};}
