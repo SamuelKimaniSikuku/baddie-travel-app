@@ -2,6 +2,19 @@ import { useState } from "react";
 import { T } from "../theme";
 import { useConversations } from "../hooks/useSupabase";
 import { isDemo } from "../lib/supabase";
+import { RowSkeleton } from "../ui/Skeleton";
+
+// "14:32" today, "Mon" this week, "12 Aug" older.
+function whenLabel(iso) {
+  if (!iso) return "";
+  var d = new Date(iso);
+  if (isNaN(d)) return "";
+  var now = new Date();
+  var sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+  if (now - d < 6 * 86400000) return d.toLocaleDateString([], { weekday:"short" });
+  return d.toLocaleDateString([], { day:"numeric", month:"short" });
+}
 
 export default function ChatsListScreen({ matches, userId, onOpenChat }) {
   var [search, setSearch] = useState("");
@@ -21,7 +34,9 @@ export default function ChatsListScreen({ matches, userId, onOpenChat }) {
       </div>
     </div>
     <div style={{ flex:1, overflow:"auto", padding:"0 16px" }}>
-      {filtered.length === 0 ? <div style={{ textAlign:"center", padding:40 }}>
+      {(!isDemo && convos.loading) ? <>
+        <RowSkeleton /><RowSkeleton /><RowSkeleton /><RowSkeleton /><RowSkeleton />
+      </> : filtered.length === 0 ? <div style={{ textAlign:"center", padding:40 }}>
         <div style={{ fontSize:44, marginBottom:10 }}>💬</div>
         <h3 style={{ fontFamily:"'Fraunces',serif" }}>No chats yet</h3>
         <p style={{ color:T.ash, fontSize:12 }}>Match with travelers to start chatting!</p>
@@ -32,11 +47,14 @@ export default function ChatsListScreen({ matches, userId, onOpenChat }) {
         var displayDestEmoji = m.destEmoji || m.destination_emoji || "🌍";
         var lastMsg = m.lastMessage ? m.lastMessage.content : "Matched! Say hi 👋";
         var unread = m.unreadCount || 0;
+        var isOnline = !!m.online;
+        var when = whenLabel(m.lastMessage && m.lastMessage.created_at);
         if (!isDemo && m.match) {
           var otherUser = m.match.user1?.id === userId ? m.match.user2 : m.match.user1;
           displayName = otherUser?.name || "Traveler";
           displayAvatar = otherUser?.avatar || "😎";
           displayDest = m.match.shared_destination || "";
+          isOnline = !!otherUser?.online;
         }
         return <div key={m.id} onClick={function(){onOpenChat(m)}} style={{
           display:"flex", alignItems:"center", gap:12, padding:"13px 0",
@@ -46,12 +64,12 @@ export default function ChatsListScreen({ matches, userId, onOpenChat }) {
           <div style={{ width:48, height:48, borderRadius:"50%", background:T.charcoal, display:"flex", alignItems:"center", justifyContent:"center",
             fontSize:24, border:"2px solid "+T.glassBorder, position:"relative" }}>
             {displayAvatar}
-            <div style={{ position:"absolute", bottom:0, right:0, width:12, height:12, borderRadius:"50%", background:T.mint, border:"2px solid "+T.midnight }} />
+            {isOnline && <div style={{ position:"absolute", bottom:0, right:0, width:12, height:12, borderRadius:"50%", background:T.mint, border:"2px solid "+T.midnight }} />}
           </div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
               <span style={{ fontWeight:600, fontSize:14 }}>{displayName}</span>
-              <span style={{ color:T.ash, fontSize:10 }}>Now</span>
+              <span style={{ color:T.ash, fontSize:10 }}>{when}</span>
             </div>
             <p style={{ color:T.mist, fontSize:12, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{lastMsg}</p>
           </div>

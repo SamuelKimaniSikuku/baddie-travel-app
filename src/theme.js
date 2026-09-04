@@ -71,6 +71,9 @@ input:focus,textarea:focus{border-color:${T.flame}66 !important;}
 @media (min-width:600px){
   .edit-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;align-items:start;}
 }
+/* Skeleton shimmer for loading states. */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.shimmer{background:linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);background-size:800px 100%;animation:shimmer 1.4s infinite linear;}
 /* Landing page. */
 .landing-hero{display:flex;gap:56px;align-items:center;justify-content:space-between;}
 .landing-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}

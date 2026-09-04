@@ -15,6 +15,7 @@ import NotificationCenter from "./ui/NotificationCenter";
 import VerifyScreen from "./screens/VerifyScreen";
 import LegalScreen from "./screens/LegalScreen";
 import LandingScreen from "./screens/LandingScreen";
+import ResetPasswordScreen from "./screens/ResetPasswordScreen";
 
 // ══════════════════════════════════════════════════════════════
 // BADDIE — Fully Integrated Travel App
@@ -24,6 +25,7 @@ import LandingScreen from "./screens/LandingScreen";
 export default function App() {
   if (typeof window !== "undefined" && window.location.pathname === "/admin") { return <AdminDashboard />; }
   if (typeof window !== "undefined" && window.location.pathname === "/verify") { return <VerifyScreen />; }
+  if (typeof window !== "undefined" && window.location.pathname === "/reset-password") { return <><style>{css}</style><ResetPasswordScreen /></>; }
   if (typeof window !== "undefined" && window.location.pathname === "/privacy") { return <><style>{css}</style><LegalScreen page="privacy" /></>; }
   if (typeof window !== "undefined" && window.location.pathname === "/terms") { return <><style>{css}</style><LegalScreen page="terms" /></>; }
   var auth = useAuth();
@@ -138,10 +140,13 @@ export default function App() {
           </div>
         </div>
 
-        {screen==="discover" && <DiscoverScreen onMatch={handleMatch} matches={matches} userId={userId} userProfile={userProfile} />}
-        {screen==="chats" && <ChatsListScreen matches={matches} userId={userId} onOpenChat={setActiveChat} />}
-        {screen==="trips" && <TripsScreen matches={matches} userId={userId} />}
-        {screen==="profile" && <ProfileScreen matchCount={matches.length} userId={userId} userProfile={userProfile} onSignOut={handleSignOut} onProfileUpdate={function(updated){ /* future: sync to Supabase */ }} />}
+        {/* Keyed wrapper so switching tabs gets a quick cross-fade. */}
+        <div key={screen} style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column", animation:"fadeIn 0.22s ease" }}>
+          {screen==="discover" && <DiscoverScreen onMatch={handleMatch} matches={matches} userId={userId} userProfile={userProfile} />}
+          {screen==="chats" && <ChatsListScreen matches={matches} userId={userId} onOpenChat={setActiveChat} />}
+          {screen==="trips" && <TripsScreen matches={matches} userId={userId} />}
+          {screen==="profile" && <ProfileScreen matchCount={matches.length} userId={userId} userProfile={userProfile} onSignOut={handleSignOut} onProfileUpdate={function(updated){ /* future: sync to Supabase */ }} />}
+        </div>
 
         {/* Mobile bottom nav (hidden on desktop) */}
         <div className="app-bottomnav" style={{ display:"flex", borderTop:"1px solid "+T.glass, background:"linear-gradient(to top,"+T.ink+","+T.midnight+")", padding:"7px 8px 10px" }}>

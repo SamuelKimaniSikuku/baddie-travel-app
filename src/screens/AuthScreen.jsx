@@ -12,6 +12,17 @@ export default function AuthScreen({ onLogin }) {
   var [loading, setLoading] = useState(false);
   var [error, setError] = useState("");
   var [emailSent, setEmailSent] = useState(false); // ← NEW
+  var [resetSent, setResetSent] = useState(false);
+
+  async function forgotPassword() {
+    setError("");
+    if (!email.trim()) { setError("Enter your email above first, then tap Forgot password."); return; }
+    setLoading(true);
+    var res = await authService.resetPassword(email.trim());
+    setLoading(false);
+    if (res.error) { setError(res.error.message || "Could not send reset email."); return; }
+    setResetSent(true);
+  }
 
   useEffect(function() { var t = setTimeout(function(){ setMode("login"); }, 2200); return function(){ clearTimeout(t); }; }, []);
 
@@ -117,6 +128,11 @@ export default function AuthScreen({ onLogin }) {
         <input value={email} onChange={function(e){setEmail(e.target.value)}} placeholder="Email" type="email" style={inputSt} />
         <input value={pw} onChange={function(e){setPw(e.target.value)}} placeholder="Password" type="password" style={inputSt}
           onKeyDown={function(e){if(e.key==="Enter")submit()}} />
+        {!isSignupMode && <p style={{ textAlign:"right", marginTop:-4 }}>
+          <span onClick={forgotPassword} style={{ color: resetSent ? T.mint : T.ash, fontSize:12, cursor:"pointer" }}>
+            {resetSent ? "✓ Reset link sent — check your email" : "Forgot password?"}
+          </span>
+        </p>}
         {error && <p style={{ color:T.rose, fontSize:12, textAlign:"center" }}>{error}</p>}
         <button onClick={submit} disabled={loading} style={{
           width:"100%", padding:"14px", borderRadius:14, border:"none",

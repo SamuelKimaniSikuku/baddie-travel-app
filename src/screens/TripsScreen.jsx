@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { T } from "../theme";
 import Glass from "../ui/Glass";
+import { CardSkeleton } from "../ui/Skeleton";
 import FlightSearch from "../ui/FlightSearch";
 import { useTrips } from "../hooks/useSupabase";
 import { tripsService } from "../services/trips";
@@ -280,7 +281,8 @@ export default function TripsScreen({ matches, userId }) {
         background:"linear-gradient(135deg,"+T.flame+","+T.sunset+")", color:T.white, fontWeight:600, cursor:"pointer", fontSize:12 }}>+ New Trip</button>
     </div>
 
-    {trips.length === 0 ? <div style={{ textAlign:"center", padding:40 }}>
+    {(!isDemo && tripsHook.loading) ? <><CardSkeleton /><CardSkeleton /><CardSkeleton /></>
+    : trips.length === 0 ? <div style={{ textAlign:"center", padding:40 }}>
       <div style={{ fontSize:44, marginBottom:10 }}>🗺️</div>
       <h3 style={{ fontFamily:"'Fraunces',serif" }}>No trips yet</h3>
       <p style={{ color:T.ash, fontSize:12 }}>Tap “+ New Trip” to start planning!</p>

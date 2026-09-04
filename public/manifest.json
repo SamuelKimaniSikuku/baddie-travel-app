@@ -1,0 +1,13 @@
+{
+  "name": "Baddie — Travel Together",
+  "short_name": "Baddie",
+  "description": "Match with verified travelers heading to your destination on your dates — then chat, plan and fly together.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A14",
+  "theme_color": "#FF4136",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

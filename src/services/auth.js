@@ -96,6 +96,13 @@ class AuthService {
     return { error };
   }
 
+  // Set a new password (used on /reset-password with the recovery session)
+  async updatePassword(newPassword) {
+    if (isDemo) return { error: null };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error };
+  }
+
   // Listen to auth state changes
   onAuthStateChange(callback) {
     if (isDemo) {
