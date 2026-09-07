@@ -40,6 +40,19 @@ class AuthService {
     return { user: data?.user, session: data?.session, error };
   }
 
+  // Resending confirmation is a separate action: never submit another signup.
+  async resendConfirmation(email) {
+    if (isDemo) return { error: null };
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
+    });
+    return { error };
+  }
+
   // OAuth sign in (Google, Apple, etc.)
   async signInWithOAuth(provider) {
     if (isDemo) return { user: DEMO_USER, error: null };
